@@ -1,4 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.password-field').forEach((field) => {
+    const input = field.querySelector('input');
+    const toggle = field.querySelector('.password-toggle');
+    if (!input || !toggle) return;
+
+    toggle.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      field.classList.toggle('is-visible', show);
+      toggle.setAttribute('aria-label', show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+    });
+  });
+
   const navToggle = document.getElementById('navToggle');
   const siteNav = document.getElementById('siteNav');
   if (navToggle && siteNav) {

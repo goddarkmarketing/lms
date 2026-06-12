@@ -13,19 +13,7 @@ if (PHP_SAPI !== 'cli') {
 require_once dirname(__DIR__) . '/includes/database.php';
 require_once dirname(__DIR__) . '/includes/backup.php';
 
-$dir = BASE_PATH . '/storage/backups';
-if (!is_dir($dir)) {
-    mkdir($dir, 0755, true);
-}
+$created = createBackupFile();
+pruneOldBackups(14);
 
-$filename = $dir . '/wenxin_lms_' . date('Y-m-d_His') . '.sql';
-$sql = exportDatabaseSql();
-file_put_contents($filename, $sql);
-
-$files = glob($dir . '/wenxin_lms_*.sql') ?: [];
-usort($files, static fn ($a, $b) => filemtime($b) <=> filemtime($a));
-foreach (array_slice($files, 14) as $old) {
-    @unlink($old);
-}
-
-echo "Backup saved: {$filename}\n";
+echo 'Backup saved: ' . $created['path'] . PHP_EOL;

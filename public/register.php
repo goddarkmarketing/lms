@@ -63,13 +63,23 @@ require_once dirname(__DIR__) . '/includes/header.php';
                 <input type="tel" name="student_phone" class="form-control" required placeholder="ใช้สำหรับเข้าสู่ระบบ">
             </div>
             <div class="form-group">
-                <label>รหัสผ่าน *</label>
-                <input type="password" name="password" class="form-control" required minlength="6" autocomplete="new-password">
+                <label for="register-password">รหัสผ่าน *</label>
+                <?php
+                $passwordName = 'password';
+                $passwordId = 'register-password';
+                $passwordAttrs = ['required' => true, 'minlength' => '6', 'autocomplete' => 'new-password'];
+                require dirname(__DIR__) . '/includes/views/password_field.php';
+                ?>
                 <small style="color:var(--gray-500)">อย่างน้อย 6 ตัวอักษร</small>
             </div>
             <div class="form-group">
-                <label>ยืนยันรหัสผ่าน *</label>
-                <input type="password" name="password_confirm" class="form-control" required minlength="6" autocomplete="new-password">
+                <label for="register-password-confirm">ยืนยันรหัสผ่าน *</label>
+                <?php
+                $passwordName = 'password_confirm';
+                $passwordId = 'register-password-confirm';
+                $passwordAttrs = ['required' => true, 'minlength' => '6', 'autocomplete' => 'new-password'];
+                require dirname(__DIR__) . '/includes/views/password_field.php';
+                ?>
             </div>
             <div class="form-group">
                 <label>อีเมล</label>

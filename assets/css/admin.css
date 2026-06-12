@@ -480,8 +480,58 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .admin-card-body.is-flush .data-table th:last-child,
-.admin-card-body.is-flush .data-table td:last-child {
+.admin-card-body.is-flush .data-table td:last-child,
+.admin-card-body.is-flush .admin-table th:last-child,
+.admin-card-body.is-flush .admin-table td:last-child {
   padding-right: var(--admin-gutter);
+}
+
+.admin-card-body.is-flush .admin-table th:first-child,
+.admin-card-body.is-flush .admin-table td:first-child {
+  padding-left: var(--admin-gutter);
+}
+
+.backup-create-form .btn {
+  padding: 0.55rem 1.1rem;
+  font-size: 0.85rem;
+  min-height: 38px;
+}
+
+.backup-intro {
+  margin: 0 0 0.5rem;
+  color: var(--text);
+}
+
+.backup-intro-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.backup-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.backup-filename {
+  font-size: 0.82rem;
+  background: #f1f5f9;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.backup-delete-form {
+  display: inline;
+}
+
+.backup-tips {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text-muted);
+}
+
+.backup-tips li + li {
+  margin-top: 0.5rem;
 }
 
 /* ── Equal two-column layout ── */
@@ -1211,4 +1261,81 @@ body.admin-sidebar-open .admin-overlay { display: block; }
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* ── Admin login (standalone) ── */
+body.admin-auth-body {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #eef1f6 0%, #e8edf5 100%);
+  font-family: var(--font-body);
+  color: var(--text);
+}
+
+.admin-auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.admin-auth-card {
+  width: min(400px, 100%);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 2.25rem 2rem;
+}
+
+.admin-auth-logo {
+  display: block;
+  width: 72px;
+  margin: 0 auto 1.25rem;
+}
+
+.admin-auth-card h1 {
+  text-align: center;
+  font-size: 1.45rem;
+  margin-bottom: 0.35rem;
+  color: var(--text-heading);
+}
+
+.admin-auth-lead {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-auth-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.admin-auth-form label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--text-heading);
+}
+
+.admin-auth-form .form-control {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.admin-auth-form .form-control:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-soft);
+}
+
+.admin-auth-form .btn-block {
+  width: 100%;
+  margin-top: 0.5rem;
 }

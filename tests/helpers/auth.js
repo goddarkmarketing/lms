@@ -8,7 +8,7 @@ async function loginAdmin(page, credentials = {}) {
   const username = credentials.username || process.env.LMS_ADMIN_USER || 'admin';
   const password = credentials.password || process.env.LMS_ADMIN_PASS || 'admin123';
 
-  await page.goto('public/admin-login.php');
+  await page.goto('admin/login.php');
   await page.locator('input[name="username"]').fill(username);
   await page.locator('input[name="password"]').fill(password);
   await page.locator('button[type="submit"]').click();

@@ -48,7 +48,7 @@ $navLink = static function (string $page, string $href, string $label, string $i
         font-display: swap;
       }
     </style>
-    <link rel="stylesheet" href="<?= asset('css/admin.css') ?>?v=18">
+    <link rel="stylesheet" href="<?= asset('css/admin.css') ?>?v=20">
 </head>
 <body class="admin-body">
 <div class="admin-overlay" id="adminOverlay" aria-hidden="true"></div>

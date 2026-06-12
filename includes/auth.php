@@ -16,7 +16,7 @@ function isAdminLoggedIn(): bool
 function requireAdmin(): void
 {
     if (!isAdminLoggedIn()) {
-        redirect('/public/admin-login.php');
+        redirect('/admin/login.php');
     }
 }
 

@@ -17,7 +17,7 @@ function detectAppUrlFromRequest(): string
     $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
     $basePath = '';
 
-    if (preg_match('#^(.*)/public(?:/|$)#', $script, $matches)) {
+    if (preg_match('#^(.*)/(?:public|admin|database)(?:/|$)#', $script, $matches)) {
         $basePath = rtrim($matches[1], '/');
     } elseif (preg_match('#^(.*)/includes(?:/|$)#', $script, $matches)) {
         $basePath = rtrim($matches[1], '/');
@@ -42,6 +42,10 @@ function resolveAppUrl(): string
             }
 
             return detectAppUrlFromRequest();
+        }
+
+        if (!str_contains($configured, '://') && str_starts_with($configured, '/')) {
+            return $configured;
         }
 
         return $configured;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 function exportDatabaseSql(): string
@@ -29,4 +30,96 @@ function exportDatabaseSql(): string
 
     $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
     return $sql;
+}
+
+function backupStorageDir(): string
+{
+    $dir = BASE_PATH . '/storage/backups';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+
+    return $dir;
+}
+
+function backupFilename(): string
+{
+    return 'wenxin_lms_' . date('Y-m-d_His') . '.sql';
+}
+
+function isValidBackupFilename(string $filename): bool
+{
+    return (bool) preg_match('/^wenxin_lms_\d{4}-\d{2}-\d{2}_\d{6}\.sql$/', $filename);
+}
+
+function createBackupFile(): array
+{
+    $filename = backupFilename();
+    $path = backupStorageDir() . '/' . $filename;
+    file_put_contents($path, exportDatabaseSql());
+
+    return [
+        'filename' => $filename,
+        'path' => $path,
+        'size' => (int) filesize($path),
+        'created_at' => (int) filemtime($path),
+    ];
+}
+
+function listBackupFiles(): array
+{
+    $files = glob(backupStorageDir() . '/wenxin_lms_*.sql') ?: [];
+    usort($files, static fn ($a, $b) => filemtime($b) <=> filemtime($a));
+
+    $list = [];
+    foreach ($files as $path) {
+        $list[] = [
+            'filename' => basename($path),
+            'size' => (int) filesize($path),
+            'created_at' => (int) filemtime($path),
+        ];
+    }
+
+    return $list;
+}
+
+function getBackupFilePath(string $filename): ?string
+{
+    if (!isValidBackupFilename($filename)) {
+        return null;
+    }
+
+    $path = backupStorageDir() . '/' . $filename;
+
+    return is_file($path) ? $path : null;
+}
+
+function deleteBackupFile(string $filename): bool
+{
+    $path = getBackupFilePath($filename);
+    if ($path === null) {
+        return false;
+    }
+
+    return unlink($path);
+}
+
+function formatBackupSize(int $bytes): string
+{
+    if ($bytes >= 1048576) {
+        return number_format($bytes / 1048576, 2) . ' MB';
+    }
+    if ($bytes >= 1024) {
+        return number_format($bytes / 1024, 1) . ' KB';
+    }
+
+    return $bytes . ' B';
+}
+
+function pruneOldBackups(int $keep = 30): void
+{
+    $files = listBackupFiles();
+    foreach (array_slice($files, $keep) as $file) {
+        deleteBackupFile($file['filename']);
+    }
 }

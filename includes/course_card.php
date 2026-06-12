@@ -61,14 +61,6 @@ $buyUrl = APP_URL . '/public/cart_buy.php?course_id=' . (int) ($course['id'] ?? 
         </div>
         <div class="course-card-footer">
             <div class="course-price"><?= e(formatPrice((float) ($course['price'] ?? 0))) ?></div>
-            <div class="course-stats">
-                <?php if (!empty($course['lesson_count'])): ?>
-                    <span><?= (int) $course['lesson_count'] ?> บท</span>
-                <?php endif; ?>
-                <?php if (!empty($course['duration_hours'])): ?>
-                    <span><?= (int) $course['duration_hours'] ?> ชม.</span>
-                <?php endif; ?>
-            </div>
         </div>
         <div class="course-card-actions">
             <a href="<?= e($addToCartUrl) ?>" class="course-buy-icon-btn js-cart-add" aria-label="เพิ่มลงตะกร้า">

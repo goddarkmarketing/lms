@@ -40,7 +40,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
             <?= csrfField() ?>
             <div class="form-group">
                 <label>เบอร์โทรหรืออีเมล</label>
-                <input type="text" name="identifier" class="form-control" required autofocus placeholder="เช่น 0895567438 หรือ demo1234@gmail.com" value="<?= e($_POST['identifier'] ?? $_POST['phone'] ?? '') ?>">
+                <input type="text" name="identifier" class="form-control" required autofocus autocomplete="username" value="<?= e($_POST['identifier'] ?? $_POST['phone'] ?? '') ?>">
             </div>
             <div class="form-group">
                 <label>รหัสผ่าน</label>
@@ -53,9 +53,6 @@ require_once dirname(__DIR__) . '/includes/header.php';
         </form>
         <p style="text-align:center;margin-top:1rem;font-size:.9rem">
             ยังไม่มีบัญชี? <a href="<?= APP_URL ?>/public/register.php">สมัครสมาชิก</a>
-        </p>
-        <p style="text-align:center;margin-top:.5rem;font-size:.85rem;color:var(--gray-500)">
-            ทีมงาน? <a href="<?= APP_URL ?>/public/admin-login.php">เข้าสู่ระบบ Admin</a>
         </p>
         <p style="text-align:center;margin-top:.5rem">
             <a href="<?= APP_URL ?>/public/index.php">กลับหน้าแรก</a>

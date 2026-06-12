@@ -58,13 +58,17 @@ function issueCertificateIfEligible(int $studentId, int $courseId): ?array
 
 function getStudentCertificates(int $studentId): array
 {
-    $stmt = db()->prepare('
-        SELECT cert.*, c.title AS course_title, c.slug AS course_slug
-        FROM certificates cert
-        JOIN courses c ON c.id = cert.course_id
-        WHERE cert.student_id = ?
-        ORDER BY cert.issued_at DESC
-    ');
-    $stmt->execute([$studentId]);
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare('
+            SELECT cert.*, c.title AS course_title, c.slug AS course_slug
+            FROM certificates cert
+            JOIN courses c ON c.id = cert.course_id
+            WHERE cert.student_id = ?
+            ORDER BY cert.issued_at DESC
+        ');
+        $stmt->execute([$studentId]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
 }

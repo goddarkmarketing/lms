@@ -5,14 +5,18 @@ require_once __DIR__ . '/access.php';
 
 function getQuizzesByCourse(int $courseId, bool $publishedOnly = true): array
 {
-    $sql = 'SELECT * FROM quizzes WHERE course_id = ?';
-    if ($publishedOnly) {
-        $sql .= ' AND is_published = 1';
+    try {
+        $sql = 'SELECT * FROM quizzes WHERE course_id = ?';
+        if ($publishedOnly) {
+            $sql .= ' AND is_published = 1';
+        }
+        $sql .= ' ORDER BY sort_order ASC, id ASC';
+        $stmt = db()->prepare($sql);
+        $stmt->execute([$courseId]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
     }
-    $sql .= ' ORDER BY sort_order ASC, id ASC';
-    $stmt = db()->prepare($sql);
-    $stmt->execute([$courseId]);
-    return $stmt->fetchAll();
 }
 
 function getQuizById(int $quizId): ?array
