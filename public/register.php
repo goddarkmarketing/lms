@@ -41,68 +41,126 @@ $pageTitle = 'สมัครสมาชิก';
 require_once dirname(__DIR__) . '/includes/header.php';
 ?>
 
-<section class="auth-page">
-    <div class="auth-card">
-        <img src="<?= e(brandLogoAsset()) ?>" alt="Logo" class="auth-logo">
+<header class="page-header auth-register-page-header">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumb">
+            <a href="<?= APP_URL ?>/public/index.php">หน้าแรก</a>
+            <span aria-hidden="true">/</span>
+            <span>สมัครสมาชิก</span>
+        </nav>
         <h1>สมัครสมาชิก</h1>
-        <p style="text-align:center;color:var(--gray-600);margin-bottom:1.5rem;font-size:.9rem">สร้างบัญชีเพื่อเรียนและติดตามคอร์สของคุณ</p>
-        <?php if ($success): ?>
-            <div class="alert alert-success"><?= e($success) ?></div>
-        <?php endif; ?>
-        <?php if ($error): ?>
-            <div class="alert alert-error"><?= e($error) ?></div>
-        <?php endif; ?>
-        <form method="post">
-            <?= csrfField() ?>
-            <div class="form-group">
-                <label>ชื่อ-นามสกุล *</label>
-                <input type="text" name="full_name" class="form-control" required>
+        <p>สร้างบัญชีเพื่อเรียนและติดตามคอร์สของคุณ</p>
+    </div>
+</header>
+
+<section class="auth-register-section">
+    <div class="container">
+        <div class="auth-register-shell">
+            <aside class="auth-register-side" aria-label="สิทธิประโยชน์สมาชิก">
+                <div class="auth-register-side-inner">
+                    <div class="auth-register-logo-wrap">
+                        <img src="<?= e(brandLogoAsset()) ?>" alt="Wenxin Chinese" class="auth-register-logo">
+                    </div>
+                    <p class="auth-register-eyebrow">WENXIN CHINESE</p>
+                    <h2 class="auth-register-side-title">เริ่มเรียนภาษาจีน<br>กับเราวันนี้</h2>
+                    <ul class="auth-register-perks">
+                        <li>
+                            <span class="auth-register-perk-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </span>
+                            <span>เข้าเรียนคอร์ส HSK ได้ทันทีหลังเปิดสิทธิ์</span>
+                        </li>
+                        <li>
+                            <span class="auth-register-perk-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </span>
+                            <span>ติดตามความคืบหน้าและประวัติการเรียน</span>
+                        </li>
+                        <li>
+                            <span class="auth-register-perk-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </span>
+                            <span>ใช้เบอร์โทรหรืออีเมลเข้าสู่ระบบได้สะดวก</span>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <div class="auth-register-main">
+                <?php if ($success): ?>
+                    <div class="alert alert-success"><?= e($success) ?></div>
+                <?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="alert alert-error"><?= e($error) ?></div>
+                <?php endif; ?>
+
+                <form method="post" class="auth-register-form">
+                    <?= csrfField() ?>
+
+                    <div class="auth-register-form-block">
+                        <h3 class="auth-register-form-title">ข้อมูลส่วนตัว</h3>
+                        <div class="auth-form-grid">
+                            <div class="form-group">
+                                <label for="register-full-name">ชื่อ-นามสกุล *</label>
+                                <input type="text" name="full_name" id="register-full-name" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-phone">เบอร์โทร *</label>
+                                <input type="tel" name="student_phone" id="register-phone" class="form-control" required placeholder="ใช้สำหรับเข้าสู่ระบบ">
+                            </div>
+                            <div class="form-group">
+                                <label for="register-email">อีเมล</label>
+                                <input type="email" name="email" id="register-email" class="form-control" placeholder="ไม่บังคับ">
+                            </div>
+                            <div class="form-group">
+                                <label for="register-line">Line ID</label>
+                                <input type="text" name="line_id" id="register-line" class="form-control" placeholder="@username">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auth-register-form-block">
+                        <h3 class="auth-register-form-title">ตั้งรหัสผ่าน</h3>
+                        <div class="auth-form-grid">
+                            <div class="form-group">
+                                <label for="register-password">รหัสผ่าน *</label>
+                                <?php
+                                $passwordName = 'password';
+                                $passwordId = 'register-password';
+                                $passwordAttrs = ['required' => true, 'minlength' => '6', 'autocomplete' => 'new-password'];
+                                require dirname(__DIR__) . '/includes/views/password_field.php';
+                                ?>
+                                <small class="form-hint">อย่างน้อย 6 ตัวอักษร</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-password-confirm">ยืนยันรหัสผ่าน *</label>
+                                <?php
+                                $passwordName = 'password_confirm';
+                                $passwordId = 'register-password-confirm';
+                                $passwordAttrs = ['required' => true, 'minlength' => '6', 'autocomplete' => 'new-password'];
+                                require dirname(__DIR__) . '/includes/views/password_field.php';
+                                ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group auth-register-terms">
+                        <label class="auth-terms-label">
+                            <input type="checkbox" name="accept_terms" value="1" required>
+                            <span>ฉันยอมรับ <a href="<?= APP_URL ?>/public/terms.php" target="_blank" rel="noopener">ข้อกำหนดการใช้งาน</a> และ <a href="<?= APP_URL ?>/public/privacy.php" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a></span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block auth-register-submit">สมัครสมาชิก</button>
+                </form>
+
+                <div class="auth-register-foot">
+                    <span>มีบัญชีแล้ว? <a href="<?= APP_URL ?>/public/login.php">เข้าสู่ระบบ</a></span>
+                    <span class="auth-register-foot-sep" aria-hidden="true">·</span>
+                    <a href="<?= APP_URL ?>/public/index.php">กลับหน้าแรก</a>
+                </div>
             </div>
-            <div class="form-group">
-                <label>เบอร์โทร *</label>
-                <input type="tel" name="student_phone" class="form-control" required placeholder="ใช้สำหรับเข้าสู่ระบบ">
-            </div>
-            <div class="form-group">
-                <label for="register-password">รหัสผ่าน *</label>
-                <?php
-                $passwordName = 'password';
-                $passwordId = 'register-password';
-                $passwordAttrs = ['required' => true, 'minlength' => '6', 'autocomplete' => 'new-password'];
-                require dirname(__DIR__) . '/includes/views/password_field.php';
-                ?>
-                <small style="color:var(--gray-500)">อย่างน้อย 6 ตัวอักษร</small>
-            </div>
-            <div class="form-group">
-                <label for="register-password-confirm">ยืนยันรหัสผ่าน *</label>
-                <?php
-                $passwordName = 'password_confirm';
-                $passwordId = 'register-password-confirm';
-                $passwordAttrs = ['required' => true, 'minlength' => '6', 'autocomplete' => 'new-password'];
-                require dirname(__DIR__) . '/includes/views/password_field.php';
-                ?>
-            </div>
-            <div class="form-group">
-                <label>อีเมล</label>
-                <input type="email" name="email" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>Line ID</label>
-                <input type="text" name="line_id" class="form-control" placeholder="@username">
-            </div>
-            <div class="form-group">
-                <label style="font-weight:400;display:flex;gap:.5rem;align-items:flex-start">
-                    <input type="checkbox" name="accept_terms" value="1" required style="margin-top:.25rem">
-                    <span>ฉันยอมรับ <a href="<?= APP_URL ?>/public/terms.php" target="_blank" rel="noopener">ข้อกำหนดการใช้งาน</a> และ <a href="<?= APP_URL ?>/public/privacy.php" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a></span>
-                </label>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">สมัครสมาชิก</button>
-        </form>
-        <p style="text-align:center;margin-top:1rem;font-size:.9rem">
-            มีบัญชีแล้ว? <a href="<?= APP_URL ?>/public/login.php">เข้าสู่ระบบ</a>
-        </p>
-        <p style="text-align:center;margin-top:.5rem">
-            <a href="<?= APP_URL ?>/public/index.php">กลับหน้าแรก</a>
-        </p>
+        </div>
     </div>
 </section>
 

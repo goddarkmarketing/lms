@@ -32,7 +32,7 @@ $checkoutNavUrl = $cartCount > 0
         font-display: swap;
       }
     </style>
-    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=98">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=107">
     <link rel="icon" href="<?= e(brandLogoAsset()) ?>" type="image/svg+xml">
 </head>
 <body>
