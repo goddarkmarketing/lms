@@ -2,10 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/env.php';
+require_once __DIR__ . '/app_url.php';
 loadEnvFile(dirname(__DIR__) . '/.env');
 
 define('APP_NAME', 'Wenxin Chinese LMS');
-define('APP_URL', env('APP_URL', '/LMS') ?? '/LMS');
+define('APP_URL', resolveAppUrl());
 define('BASE_PATH', dirname(__DIR__));
 
 define('DB_HOST', env('DB_HOST', 'localhost') ?? 'localhost');
