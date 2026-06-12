@@ -128,7 +128,7 @@ require __DIR__ . '/views/contact_fab.php';
 
                 <li><a href="<?= e($footerCheckoutUrl) ?>">แจ้งชำระเงิน</a></li>
 
-                <li><a href="<?= APP_URL ?>/public/index.php#contact">ติดต่อเรา</a></li>
+                <li><a href="<?= APP_URL ?>/public/contact.php">ติดต่อเรา</a></li>
 
             </ul>
 

@@ -32,7 +32,7 @@ $checkoutNavUrl = $cartCount > 0
         font-display: swap;
       }
     </style>
-    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=77">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=96">
     <link rel="icon" href="<?= e(brandLogoAsset()) ?>" type="image/svg+xml">
 </head>
 <body>
@@ -53,7 +53,7 @@ $checkoutNavUrl = $cartCount > 0
                 <a href="<?= APP_URL ?>/public/index.php">หน้าแรก</a>
                 <a href="<?= APP_URL ?>/public/courses.php">คอร์สเรียน</a>
                 <a href="<?= APP_URL ?>/public/faq.php">คำถามที่พบบ่อย</a>
-                <a href="<?= APP_URL ?>/public/index.php#contact">ติดต่อเรา</a>
+                <a href="<?= APP_URL ?>/public/contact.php">ติดต่อเรา</a>
             </div>
             <form class="header-search" action="<?= APP_URL ?>/public/courses.php" method="get" role="search">
                 <label class="sr-only" for="headerSearch">ค้นหาคอร์ส</label>

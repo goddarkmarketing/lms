@@ -249,7 +249,7 @@ function lineContactUrl(): string
 {
     $lineId = trim(getSetting('line_id', ''));
     if ($lineId === '') {
-        return APP_URL . '/public/index.php#contact';
+        return APP_URL . '/public/contact.php';
     }
     if (str_starts_with($lineId, 'http')) {
         return $lineId;

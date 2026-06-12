@@ -186,19 +186,19 @@ function iconAsset(string $filename): string
     return APP_URL . '/assets/icon/' . rawurlencode($filename);
 }
 
+function versionedCourseAsset(string $relativePath): string
+{
+    $relativePath = ltrim($relativePath, '/');
+    $full = BASE_PATH . '/assets/' . $relativePath;
+    $url = asset($relativePath);
+    if (is_file($full)) {
+        return $url . '?v=' . filemtime($full);
+    }
+    return $url;
+}
+
 function courseCoverUrl(array $course): string
 {
-    if (!empty($course['image_url'])) {
-        $url = $course['image_url'];
-        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
-            return $url;
-        }
-        if (str_starts_with($url, 'uploads/courses/')) {
-            return APP_URL . '/public/download.php?file=' . urlencode(basename($url));
-        }
-        return asset(ltrim($url, '/'));
-    }
-
     $slugCovers = [
         'hsk1-pinyin' => 'images/courses/hsk1.png',
         'hsk2' => 'images/courses/hsk2.png',
@@ -211,8 +211,19 @@ function courseCoverUrl(array $course): string
     ];
 
     $slug = $course['slug'] ?? '';
-    if (isset($slugCovers[$slug])) {
-        return asset($slugCovers[$slug]);
+    if (isset($slugCovers[$slug]) && is_file(BASE_PATH . '/assets/' . $slugCovers[$slug])) {
+        return versionedCourseAsset($slugCovers[$slug]);
+    }
+
+    if (!empty($course['image_url'])) {
+        $url = $course['image_url'];
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            return $url;
+        }
+        if (str_starts_with($url, 'uploads/courses/')) {
+            return APP_URL . '/public/download.php?file=' . urlencode(basename($url));
+        }
+        return versionedCourseAsset(ltrim($url, '/'));
     }
 
     $categoryCovers = [
@@ -221,7 +232,7 @@ function courseCoverUrl(array $course): string
         'exam_prep' => 'images/courses/cover-exam.svg',
     ];
 
-    return asset($categoryCovers[$course['category'] ?? 'hsk'] ?? 'images/courses/cover-hsk.svg');
+    return versionedCourseAsset($categoryCovers[$course['category'] ?? 'hsk'] ?? 'images/courses/cover-hsk.svg');
 }
 
 function courseEnrollUrl(array $course): string

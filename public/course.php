@@ -256,7 +256,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                 <?php endif; ?>
                 <a href="<?= e(courseBuyUrl($course)) ?>" class="btn btn-primary btn-block btn-sm">ซื้อคอร์สนี้</a>
                 <a href="<?= e(courseEnrollUrl($course)) ?>" class="btn btn-outline btn-block btn-sm js-cart-add">เพิ่มลงตะกร้า</a>
-                <a href="<?= APP_URL ?>/public/index.php#contact" class="btn btn-outline btn-block btn-sm">ติดต่อสอบถาม</a>
+                <a href="<?= APP_URL ?>/public/contact.php" class="btn btn-outline btn-block btn-sm">ติดต่อสอบถาม</a>
             </div>
 
             <p class="course-sidebar-note"><?= e(getSetting('payment_note')) ?></p>

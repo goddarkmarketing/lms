@@ -39,6 +39,6 @@ $faqIndex = 0;
         <p>สอบถามเรื่องคอร์ส การชำระเงิน หรือการใช้งานระบบได้ทันที</p>
         <a href="<?= e($lineUrl) ?>" class="btn btn-primary btn-block" target="_blank" rel="noopener">สอบถาม Line</a>
         <a href="<?= APP_URL ?>/public/register.php" class="btn btn-outline btn-block">สมัครเรียนเลย</a>
-        <a href="<?= APP_URL ?>/public/index.php#contact" class="btn btn-outline btn-block">ดูช่องทางติดต่อ</a>
+        <a href="<?= APP_URL ?>/public/contact.php" class="btn btn-outline btn-block">ดูช่องทางติดต่อ</a>
     </aside>
 </div>

@@ -6,6 +6,6 @@
     </linearGradient>
   </defs>
   <circle cx="60" cy="60" r="56" fill="url(#g)"/>
-  <text x="60" y="54" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="700">‡</text>
+  <text x="60" y="54" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="700">ï¿½</text>
   <text x="60" y="88" text-anchor="middle" fill="#ffe8ea" font-family="Arial,sans-serif" font-size="14" font-weight="600" letter-spacing="2">WENXIN</text>
 </svg>

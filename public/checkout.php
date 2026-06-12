@@ -36,6 +36,12 @@ $orderTotal = cartTotal();
 $orderSubtotal = cartSubtotal();
 $orderDiscount = cartDiscount();
 $bankNumber = getSetting('bank_account_number');
+$bankName = getSetting('bank_name');
+$bankAccountName = getSetting('bank_account_name');
+$bankDigits = preg_replace('/\D/', '', $bankNumber);
+$bankNumberDisplay = strlen($bankDigits) === 10
+    ? substr($bankDigits, 0, 3) . '-' . substr($bankDigits, 3, 1) . '-' . substr($bankDigits, 4, 5) . '-' . substr($bankDigits, 9, 1)
+    : $bankNumber;
 $checkoutStep = $paymentSuccess ? 4 : 3;
 $promptPay = getCheckoutPromptPayData($orderTotal);
 $omiseEnabled = isOmiseEnabled();
@@ -81,35 +87,50 @@ $omisePublicKey = omisePublicKey();
                             <span class="checkout-method-radio" aria-hidden="true"></span>
                             <div>
                                 <h2>ชำระเงินโดยการโอนเงินผ่านธนาคาร</h2>
-                                <p>โอนเงินเข้าบัญชีด้านล่าง แล้วแนบสลิปเพื่อยืนยัน</p>
+                                <p>โอนเงินตามยอดด้านล่าง แล้วแนบสลิปเพื่อยืนยันการชำระเงิน</p>
                             </div>
                         </div>
 
-                        <figure class="checkout-bank-banner">
-                            <img
-                                src="<?= e(imageAsset('images/checkout/bank-banner.png', 'images/checkout/bank-banner.svg')) ?>"
-                                alt="ช่องทางการชำระเงิน — <?= e(getSetting('bank_name')) ?> ชื่อบัญชี <?= e(getSetting('bank_account_name')) ?> เลขที่บัญชี <?= e($bankNumber) ?>"
-                                width="1200"
-                                height="400"
-                                loading="lazy"
-                                decoding="async"
-                            >
-                            <figcaption class="visually-hidden">
-                                โอนเงินเข้าบัญชี <?= e(getSetting('bank_name')) ?> ชื่อ <?= e(getSetting('bank_account_name')) ?> เลขที่ <?= e($bankNumber) ?>
-                            </figcaption>
-                        </figure>
-                        <p class="checkout-bank-copy-row">
-                            <button type="button" class="btn btn-outline btn-sm js-copy-bank" data-copy="<?= e($bankNumber) ?>">คัดลอกเลขบัญชี <?= e($bankNumber) ?></button>
-                        </p>
+                        <div class="checkout-transfer-panel">
+                            <div class="checkout-bank-card<?= $promptPay ? ' checkout-bank-card--with-qr' : '' ?>">
+                                <div class="checkout-bank-card-body">
+                                    <div class="checkout-bank-card-info">
+                                        <div class="checkout-bank-card-top">
+                                            <img src="<?= e(imageAsset('images/checkout/kbank-logo.png', 'images/checkout/kbank-logo.svg')) ?>" alt="โลโก้<?= e($bankName) ?>" class="checkout-bank-logo" width="52" height="52" loading="lazy" decoding="async">
+                                            <div class="checkout-bank-card-brand">
+                                                <span class="checkout-bank-card-bank"><?= e($bankName) ?></span>
+                                            </div>
+                                        </div>
+                                        <dl class="checkout-bank-details">
+                                            <div class="checkout-bank-detail-row">
+                                                <dt>ชื่อบัญชี</dt>
+                                                <dd><?= e($bankAccountName) ?></dd>
+                                            </div>
+                                            <div class="checkout-bank-detail-row checkout-bank-detail-row--account">
+                                                <dt>เลขที่บัญชี</dt>
+                                                <dd>
+                                                    <span class="checkout-bank-number" id="checkoutBankNumber"><?= e($bankNumberDisplay) ?></span>
+                                                    <button type="button" class="checkout-bank-copy js-copy-bank" data-copy="<?= e($bankDigits ?: $bankNumber) ?>" aria-label="คัดลอกเลขบัญชี">
+                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                                        <span class="checkout-bank-copy-label">คัดลอก</span>
+                                                    </button>
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                        <p class="checkout-bank-note">โอนจากแอป <?= e($bankName) ?> หรือธนาคารอื่นได้ทันที</p>
+                                    </div>
 
-                        <?php if ($promptPay): ?>
-                        <div class="checkout-promptpay">
-                            <h3>สแกน PromptPay</h3>
-                            <p class="checkout-promptpay-amount">ยอดชำระ <?= e(formatPrice($orderTotal)) ?></p>
-                            <img src="<?= e($promptPay['qr_url']) ?>" alt="PromptPay QR" width="240" height="240" class="checkout-promptpay-qr" loading="lazy">
-                            <p class="checkout-promptpay-hint">สแกนด้วยแอปธนาคาร แล้วแนบสลิปด้านล่าง</p>
+                                    <?php if ($promptPay): ?>
+                                    <div class="checkout-bank-qr">
+                                        <div class="checkout-bank-qr-wrap">
+                                            <img src="<?= e($promptPay['qr_url']) ?>" alt="PromptPay QR ยอด <?= e(formatPrice($orderTotal)) ?>" width="200" height="200" class="checkout-bank-qr-img" loading="lazy">
+                                        </div>
+                                        <p class="checkout-bank-qr-hint">เปิดแอปธนาคาร → สแกน QR → โอนตามยอด</p>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
-                        <?php endif; ?>
 
                         <ol class="checkout-instructions">
                             <li>โอนเงินตามยอดรวมในสรุปคำสั่งซื้อ</li>
@@ -139,14 +160,10 @@ $omisePublicKey = omisePublicKey();
                                 <input type="email" id="student_email" name="student_email" class="form-control" placeholder="สำหรับรับการยืนยัน" value="<?= e($checkoutStudent['email'] ?? '') ?>">
                             </div>
 
-                            <div class="form-group">
-                                <label>คอร์สในตะกร้า (<?= (int) cartCount() ?> รายการ)</label>
-                                <div class="form-control checkout-readonly"><?= e(cartTitlesSummary()) ?></div>
-                                <input type="hidden" name="from_cart" value="1">
-                                <?php if ($preselectCourseId > 0): ?>
-                                <input type="hidden" name="course_id" value="<?= $preselectCourseId ?>">
-                                <?php endif; ?>
-                            </div>
+                            <input type="hidden" name="from_cart" value="1">
+                            <?php if ($preselectCourseId > 0): ?>
+                            <input type="hidden" name="course_id" value="<?= $preselectCourseId ?>">
+                            <?php endif; ?>
 
                             <div class="form-row checkout-form-row">
                                 <div class="form-group">

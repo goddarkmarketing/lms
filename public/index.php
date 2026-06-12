@@ -16,9 +16,9 @@ try {
     $courses = [];
 }
 
-$featured = array_filter($courses, fn($c) => !empty($c['is_featured']));
-$displayCourses = $featured ?: array_slice($courses, 0, 6);
-$sliderCourses = array_values($displayCourses);
+$featuredList = array_values(array_filter($courses, fn($c) => !empty($c['is_featured'])));
+$otherList = array_values(array_filter($courses, fn($c) => empty($c['is_featured'])));
+$homeCourses = array_slice(array_merge($featuredList, $otherList), 0, 8);
 $homeStats = getHomepageStats();
 $faqItems = getHomepageFaqItems();
 $lineUrl = lineContactUrl();
@@ -186,22 +186,11 @@ $reviews = [
             </div>
             <a href="<?= APP_URL ?>/public/courses.php" class="section-link-more">ดูคอร์สทั้งหมด →</a>
         </div>
-        <?php if ($sliderCourses): ?>
-        <div class="courses-slider" id="coursesSlider">
-            <button type="button" class="courses-slider-btn courses-slider-prev" aria-label="คอร์สก่อนหน้า">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
-            </button>
-            <div class="courses-slider-viewport">
-                <div class="courses-slider-track">
-                    <?php foreach ($sliderCourses as $course): ?>
-                        <?php include dirname(__DIR__) . '/includes/course_card.php'; ?>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-            <button type="button" class="courses-slider-btn courses-slider-next" aria-label="คอร์สถัดไป">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
-            </button>
-            <div class="courses-slider-dots" role="tablist" aria-label="เลือกหน้าคอร์ส"></div>
+        <?php if ($homeCourses): ?>
+        <div class="courses-grid courses-home-grid">
+            <?php foreach ($homeCourses as $course): ?>
+                <?php include dirname(__DIR__) . '/includes/course_card.php'; ?>
+            <?php endforeach; ?>
         </div>
         <?php else: ?>
         <p class="lesson-empty">กำลังโหลดคอร์ส... กรุณา import ฐานข้อมูลจาก database/schema.sql</p>

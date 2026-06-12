@@ -65,10 +65,12 @@ try {
                 </div>
                     <div class="filter-field filter-field-button">
                         <label class="filter-label filter-label-spacer" aria-hidden="true">&nbsp;</label>
-                        <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
-                        <button id="courseClearBtn" type="button" class="btn btn-outline btn-sm">
-                            ล้างตัวกรอง
-                        </button>
+                        <div class="filter-button-group">
+                            <button type="submit" class="btn btn-primary btn-sm">ค้นหา</button>
+                            <button id="courseClearBtn" type="button" class="btn btn-outline btn-sm">
+                                ล้างตัวกรอง
+                            </button>
+                        </div>
                     </div>
             </div>
         </form>
