@@ -1,0 +1,322 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/cart.php';
+
+function checkoutStepUrl(int $step): string
+{
+    return match ($step) {
+        1 => APP_URL . '/public/courses.php',
+        2 => APP_URL . '/public/cart.php',
+        3 => APP_URL . '/public/checkout.php',
+        4 => APP_URL . '/public/my-courses.php',
+        default => APP_URL . '/public/courses.php',
+    };
+}
+
+function renderCheckoutSteps(int $activeStep): void
+{
+    $steps = [
+        1 => 'เลือกคอร์ส',
+        2 => 'ใส่ตะกร้า',
+        3 => 'ชำระเงิน',
+        4 => 'เริ่มเรียน',
+    ];
+    ?>
+    <nav class="checkout-steps" aria-label="ขั้นตอนการสมัครเรียน">
+        <?php foreach ($steps as $num => $label): ?>
+            <?php if ($num > 1): ?>
+            <span class="checkout-step-line<?= $num <= $activeStep ? ' is-done' : '' ?>" aria-hidden="true"></span>
+            <?php endif; ?>
+            <?php
+            $classes = ['checkout-step'];
+            if ($num < $activeStep) {
+                $classes[] = 'is-done';
+            }
+            if ($num === $activeStep) {
+                $classes[] = 'is-active';
+            }
+            $canLink = $num <= $activeStep || ($num === 2 && cartCount() > 0) || ($num === 3 && cartCount() > 0);
+            $href = checkoutStepUrl($num);
+            if ($num === 3 && cartCount() === 0 && $activeStep < 3) {
+                $canLink = false;
+            }
+            ?>
+            <?php if ($canLink && $num !== $activeStep): ?>
+            <a href="<?= e($href) ?>" class="<?= e(implode(' ', $classes)) ?>">
+                <span class="checkout-step-num"><?= $num ?></span>
+                <span class="checkout-step-label"><?= e($label) ?></span>
+            </a>
+            <?php else: ?>
+            <span class="<?= e(implode(' ', $classes)) ?>"<?= $num === $activeStep ? ' aria-current="step"' : '' ?>>
+                <span class="checkout-step-num"><?= $num ?></span>
+                <span class="checkout-step-label"><?= e($label) ?></span>
+            </span>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    </nav>
+    <?php
+}
+
+function requireCartForCheckout(): void
+{
+    if (cartCount() > 0) {
+        return;
+    }
+    flash('payment_error', 'กรุณาเลือกคอร์สและใส่ตะกร้าก่อนชำระเงิน');
+    redirect('/public/courses.php');
+}
+
+function appendCartIdsToNote(string $note): string
+{
+    $ids = getCartCourseIds();
+    if (!$ids) {
+        return $note;
+    }
+    $meta = 'cart_ids:' . implode(',', $ids);
+    if ($note !== '' && str_contains($note, 'cart_ids:')) {
+        return $note;
+    }
+    return $note !== '' ? $note . "\n" . $meta : $meta;
+}
+
+function parseCartIdsFromNote(?string $note): array
+{
+    if (!$note || !preg_match('/cart_ids:([\d,]+)/', $note, $m)) {
+        return [];
+    }
+    return array_values(array_filter(array_map('intval', explode(',', $m[1]))));
+}
+
+function savePaymentItems(int $paymentId, array $cartItems): void
+{
+    if ($paymentId <= 0 || !$cartItems) {
+        return;
+    }
+    $stmt = db()->prepare('INSERT INTO payment_items (payment_id, course_id, amount) VALUES (?, ?, ?)');
+    foreach ($cartItems as $item) {
+        $courseId = (int) ($item['id'] ?? 0);
+        if ($courseId <= 0) {
+            continue;
+        }
+        $stmt->execute([$paymentId, $courseId, (float) ($item['price'] ?? 0)]);
+    }
+}
+
+function getPaymentCourseIds(int $paymentId): array
+{
+    $stmt = db()->prepare('SELECT course_id FROM payment_items WHERE payment_id = ? ORDER BY id ASC');
+    $stmt->execute([$paymentId]);
+    $ids = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    return array_values(array_filter($ids));
+}
+
+function getPaymentItemsWithTitles(int $paymentId): array
+{
+    $stmt = db()->prepare('
+        SELECT pi.course_id, pi.amount, c.title
+        FROM payment_items pi
+        JOIN courses c ON c.id = pi.course_id
+        WHERE pi.payment_id = ?
+        ORDER BY pi.id ASC
+    ');
+    $stmt->execute([$paymentId]);
+    return $stmt->fetchAll();
+}
+
+function resolveCheckoutStudentId(string $name, ?string $email, string $phone): int
+{
+    require_once __DIR__ . '/student_auth.php';
+    if (isStudentLoggedIn()) {
+        return (int) $_SESSION['student_id'];
+    }
+    return findOrCreateStudent($name, $email, $phone);
+}
+
+function getCourseIdsFromCartItems(array $items): array
+{
+    return array_values(array_filter(array_map(static fn ($item) => (int) ($item['id'] ?? 0), $items)));
+}
+
+function syncEnrollmentsFromPaymentsForStudent(int $studentId): void
+{
+    if ($studentId <= 0) {
+        return;
+    }
+    $stmt = db()->prepare('SELECT phone FROM students WHERE id = ? LIMIT 1');
+    $stmt->execute([$studentId]);
+    $phone = trim((string) ($stmt->fetchColumn() ?: ''));
+    if ($phone === '') {
+        return;
+    }
+
+    $payStmt = db()->prepare('
+        SELECT * FROM payments
+        WHERE student_phone = ? AND status IN ("pending", "verified")
+        ORDER BY created_at ASC
+    ');
+    $payStmt->execute([$phone]);
+    foreach ($payStmt->fetchAll() as $payment) {
+        $paymentId = (int) ($payment['id'] ?? 0);
+        $courseIds = $paymentId > 0 ? getPaymentCourseIds($paymentId) : [];
+        if (!$courseIds) {
+            $courseIds = parseCartIdsFromNote($payment['note'] ?? '');
+        }
+        if (!$courseIds && !empty($payment['course_id'])) {
+            $courseIds = [(int) $payment['course_id']];
+        }
+        if (!$courseIds) {
+            continue;
+        }
+        $status = ($payment['status'] ?? '') === 'verified' ? 'active' : 'pending';
+        enrollStudentInCourses($studentId, $courseIds, $status);
+    }
+}
+
+function findOrCreateStudent(string $name, ?string $email, string $phone): int
+{
+    $stmt = db()->prepare('SELECT id FROM students WHERE phone = ? LIMIT 1');
+    $stmt->execute([$phone]);
+    $existing = $stmt->fetchColumn();
+    if ($existing) {
+        $studentId = (int) $existing;
+        $upd = db()->prepare('UPDATE students SET full_name = ?, email = COALESCE(?, email) WHERE id = ?');
+        $upd->execute([$name, $email ?: null, $studentId]);
+        return $studentId;
+    }
+
+    $ins = db()->prepare('INSERT INTO students (full_name, email, phone) VALUES (?, ?, ?)');
+    $ins->execute([$name, $email ?: null, $phone]);
+    return (int) db()->lastInsertId();
+}
+
+function enrollStudentInCourses(int $studentId, array $courseIds, string $status = 'active'): void
+{
+    $allowed = ['pending', 'active', 'completed', 'cancelled'];
+    if (!in_array($status, $allowed, true)) {
+        $status = 'active';
+    }
+
+    $check = db()->prepare('SELECT id FROM enrollments WHERE student_id = ? AND course_id = ? LIMIT 1');
+    $insert = db()->prepare('INSERT INTO enrollments (student_id, course_id, status) VALUES (?, ?, ?)');
+
+    foreach (array_unique(array_map('intval', $courseIds)) as $courseId) {
+        if ($courseId <= 0) {
+            continue;
+        }
+        $check->execute([$studentId, $courseId]);
+        if ($check->fetchColumn()) {
+            $upd = db()->prepare('UPDATE enrollments SET status = ? WHERE student_id = ? AND course_id = ?');
+            $upd->execute([$status, $studentId, $courseId]);
+            continue;
+        }
+        $insert->execute([$studentId, $courseId, $status]);
+    }
+}
+
+function getEnrolledCoursesByPhone(string $phone): array
+{
+    $phone = trim($phone);
+    if ($phone === '') {
+        return [];
+    }
+
+    $stmt = db()->prepare('
+        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, e.status, e.enrolled_at
+        FROM enrollments e
+        JOIN students s ON s.id = e.student_id
+        JOIN courses c ON c.id = e.course_id
+        WHERE s.phone = ? AND e.status IN ("active", "completed")
+        ORDER BY e.enrolled_at DESC
+    ');
+    $stmt->execute([$phone]);
+    return $stmt->fetchAll();
+}
+
+function getEnrolledCoursesByStudentId(int $studentId): array
+{
+    if ($studentId <= 0) {
+        return [];
+    }
+    $stmt = db()->prepare('
+        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, e.status, e.enrolled_at
+        FROM enrollments e
+        JOIN courses c ON c.id = e.course_id
+        WHERE e.student_id = ? AND e.status IN ("pending", "active", "completed")
+        ORDER BY e.enrolled_at DESC
+    ');
+    $stmt->execute([$studentId]);
+    return $stmt->fetchAll();
+}
+
+function getFirstLessonIdForCourse(int $courseId): ?int
+{
+    $stmt = db()->prepare('
+        SELECT id FROM lessons
+        WHERE course_id = ? AND is_published = 1
+        ORDER BY sort_order ASC, id ASC
+        LIMIT 1
+    ');
+    $stmt->execute([$courseId]);
+    $id = $stmt->fetchColumn();
+    return $id ? (int) $id : null;
+}
+
+function addCourseSlugToCart(string $slug): bool
+{
+    $course = getCourseBySlug($slug);
+    if (!$course) {
+        return false;
+    }
+    addToCartCourse((int) $course['id']);
+    return true;
+}
+
+function enrollFromPayment(array $payment): void
+{
+    require_once __DIR__ . '/mailer.php';
+    require_once __DIR__ . '/line_notify.php';
+
+    $paymentId = (int) ($payment['id'] ?? 0);
+    $courseIds = $paymentId > 0 ? getPaymentCourseIds($paymentId) : [];
+    if (!$courseIds) {
+        $courseIds = parseCartIdsFromNote($payment['note'] ?? '');
+    }
+    if (!$courseIds && !empty($payment['course_id'])) {
+        $courseIds = [(int) $payment['course_id']];
+    }
+    if (!$courseIds) {
+        return;
+    }
+
+    $studentId = findOrCreateStudent(
+        (string) ($payment['student_name'] ?? ''),
+        $payment['student_email'] ?? null,
+        (string) ($payment['student_phone'] ?? '')
+    );
+    enrollStudentInCourses($studentId, $courseIds, 'active');
+
+    $titles = [];
+    foreach ($courseIds as $cid) {
+        $c = getCourseById((int) $cid);
+        if ($c) {
+            $titles[] = $c['title'];
+        }
+    }
+    $email = $payment['student_email'] ?? null;
+    if (!$email) {
+        $stmt = db()->prepare('SELECT email FROM students WHERE id = ? LIMIT 1');
+        $stmt->execute([$studentId]);
+        $email = $stmt->fetchColumn() ?: null;
+    }
+    if ($email && $titles) {
+        notifyEnrollmentOpened((string) $email, (string) ($payment['student_name'] ?? ''), $titles);
+    }
+    if ($titles) {
+        lineNotifyEnrollment(
+            (string) ($payment['student_name'] ?? ''),
+            (string) ($payment['student_phone'] ?? ''),
+            $titles
+        );
+    }
+}

@@ -1,0 +1,11 @@
+.env
+storage/logs/*.log
+storage/backups/*.sql
+uploads/payments/*
+!uploads/payments/.htaccess
+uploads/courses/*
+!uploads/courses/.gitkeep
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/

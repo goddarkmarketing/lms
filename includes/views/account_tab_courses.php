@@ -1,0 +1,114 @@
+<?php
+declare(strict_types=1);
+/** @var array $student */
+/** @var int $studentId */
+/** @var array $enrolled */
+/** @var array $progressMap */
+/** @var array $certByCourse */
+?>
+<div class="account-panel-head">
+    <div>
+        <h1>คอร์สของฉัน</h1>
+        <p class="account-panel-desc">
+            คอร์สทั้งหมด <?= count($enrolled) ?> รายการ
+            <?php if ($activeCourseCount > 0): ?> · เปิดสิทธิ์แล้ว <?= (int) $activeCourseCount ?><?php endif; ?>
+            <?php if ($pendingCourseCount > 0): ?> · รอตรวจสอบ <?= (int) $pendingCourseCount ?><?php endif; ?>
+        </p>
+    </div>
+    <?php if ($enrolled): ?>
+    <a href="<?= APP_URL ?>/public/courses.php" class="btn btn-primary btn-sm">เลือกคอร์สเพิ่ม</a>
+    <?php endif; ?>
+</div>
+
+<?php if ($enrolled): ?>
+<ul class="my-courses-list">
+    <?php foreach ($enrolled as $course): ?>
+    <?php
+        $cid = (int) $course['id'];
+        $enrollmentStatus = (string) ($course['status'] ?? 'active');
+        $isPending = $enrollmentStatus === 'pending';
+        $prog = $isPending
+            ? ['percent' => 0, 'done' => 0, 'total' => 0]
+            : ($progressMap[$cid] ?? ['percent' => 0, 'done' => 0, 'total' => 0]);
+        $lessonId = getFirstLessonIdForCourse($cid);
+        $startUrl = $lessonId
+            ? APP_URL . '/public/lesson.php?lesson_id=' . $lessonId
+            : APP_URL . '/public/course.php?slug=' . urlencode($course['slug']);
+        $quizzes = $isPending ? [] : getQuizzesByCourse($cid);
+        $cert = $certByCourse[$cid] ?? null;
+        if (!$isPending && $prog['percent'] >= 100) {
+            maybeMarkEnrollmentCompleted($studentId, $cid);
+        }
+        if (!$isPending && !$cert && $prog['percent'] >= 100) {
+            $cert = issueCertificateIfEligible($studentId, $cid);
+            if ($cert) {
+                $certByCourse[$cid] = $cert;
+            }
+        }
+    ?>
+    <li class="my-courses-item<?= $isPending ? ' my-courses-item--pending' : '' ?>">
+        <div class="my-courses-item-cover">
+            <img src="<?= e(courseCoverUrl($course)) ?>" alt="<?= e($course['title']) ?>" loading="lazy">
+        </div>
+        <div class="my-courses-item-body">
+            <div class="my-courses-item-head">
+                <h2><?= e($course['title']) ?></h2>
+                <?php if (!$isPending): ?>
+                <span class="my-courses-badge my-courses-badge--active">เปิดสิทธิ์แล้ว</span>
+                <?php endif; ?>
+            </div>
+            <?php if (!empty($course['subtitle'])): ?>
+            <p class="my-courses-item-sub"><?= e($course['subtitle']) ?></p>
+            <?php endif; ?>
+            <?php if ($isPending): ?>
+            <div class="my-courses-pending-box">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 7v5l3 2"></path>
+                </svg>
+                <p>ได้รับการแจ้งชำระเงินแล้ว ทีมงานจะตรวจสอบและเปิดสิทธิ์เรียนภายใน 24 ชั่วโมง</p>
+            </div>
+            <?php else: ?>
+            <div class="course-progress-bar-wrap course-progress-bar-wrap--compact">
+                <div class="course-progress-label">
+                    <span>ความคืบหน้า</span>
+                    <strong><?= (int) $prog['percent'] ?>%</strong>
+                </div>
+                <div class="course-progress-bar" role="progressbar" aria-valuenow="<?= (int) $prog['percent'] ?>" aria-valuemin="0" aria-valuemax="100">
+                    <span style="width:<?= (int) $prog['percent'] ?>%"></span>
+                </div>
+                <small><?= (int) $prog['done'] ?> / <?= (int) $prog['total'] ?> บท</small>
+            </div>
+            <?php if ($quizzes): ?>
+            <div class="my-courses-quizzes">
+                <span class="my-courses-quizzes-label">แบบทดสอบ:</span>
+                <?php foreach ($quizzes as $qz): ?>
+                <a href="<?= APP_URL ?>/public/quiz.php?quiz_id=<?= (int) $qz['id'] ?>" class="my-courses-quiz-link"><?= e($qz['title']) ?></a>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <div class="my-courses-item-actions">
+            <?php if ($isPending): ?>
+            <span class="my-courses-badge my-courses-badge--pending my-courses-badge--action">รอตรวจสอบ</span>
+            <?php else: ?>
+            <a href="<?= e($startUrl) ?>" class="btn btn-primary btn-sm"><?= $prog['percent'] >= 100 ? 'ทบทวน' : 'เริ่มเรียน' ?></a>
+            <?php if ($cert): ?>
+            <a href="<?= APP_URL ?>/public/certificate.php?code=<?= urlencode($cert['certificate_code']) ?>" class="btn btn-outline btn-sm" target="_blank">ใบประกาศ</a>
+            <?php elseif ($prog['percent'] >= 100 && (!certificateRequiresQuiz() || studentPassedAllCourseQuizzes($studentId, $cid))): ?>
+            <a href="<?= APP_URL ?>/public/certificate.php?course_id=<?= $cid ?>" class="btn btn-outline btn-sm">รับใบประกาศ</a>
+            <?php elseif ($prog['percent'] >= 100 && certificateRequiresQuiz() && $quizzes): ?>
+            <span class="my-courses-status-btn" title="ต้องผ่านแบบทดสอบก่อน">รอผ่านแบบทดสอบ</span>
+            <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    </li>
+    <?php endforeach; ?>
+</ul>
+<?php else: ?>
+<div class="cart-page-empty account-empty-state">
+    <p>ยังไม่มีคอร์สในบัญชีของคุณ หากชำระเงินแล้วให้เข้าสู่ระบบด้วยเบอร์โทรหรืออีเมลที่ใช้แจ้งชำระเงิน หรือเลือกคอร์สใหม่ได้เลย</p>
+    <a href="<?= APP_URL ?>/public/courses.php" class="btn btn-primary">เลือกคอร์สเรียน</a>
+</div>
+<?php endif; ?>
