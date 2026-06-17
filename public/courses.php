@@ -28,10 +28,7 @@ try {
                         <label for="courseSearch" class="filter-label">ค้นหา</label>
                         <div class="filter-input-wrap">
                             <span class="filter-input-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="11" cy="11" r="7"></circle>
-                                    <path d="M21 21l-4.3-4.3"></path>
-                                </svg>
+                                <?= lucide_icon('search', ['size' => 18]) ?>
                             </span>
                             <input
                                 id="courseSearch"
@@ -50,10 +47,7 @@ try {
                     <label for="courseCategorySelect" class="filter-label">หมวดหมู่</label>
                         <div class="filter-select-wrap">
                             <span class="filter-input-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 10v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"></path>
-                                    <path d="M21 10H3l2-7h14l2 7z"></path>
-                                </svg>
+                                <?= lucide_icon('sliders-horizontal', ['size' => 18]) ?>
                             </span>
                             <select id="courseCategorySelect" class="form-control">
                                 <option value="all">ทั้งหมด</option>

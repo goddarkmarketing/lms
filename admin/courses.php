@@ -140,10 +140,10 @@ $courses = getCourses(null, false);
             <div class="form-group">
                 <label>รูปปกคอร์ส</label>
                 <input type="file" name="cover_image" class="form-control" accept="image/jpeg,image/png,image/webp,image/gif">
-                <input type="text" name="image_url" class="form-control" style="margin-top:.5rem" value="<?= e($editCourse['image_url'] ?? '') ?>" placeholder="หรือใส่ URL / path เช่น images/courses/photo.jpg">
-                <small style="color:#6b7280">อัปโหลดไฟล์ (สูงสุด 3MB) หรือใส่ลิงก์รูป</small>
+                <input type="text" name="image_url" class="form-control form-control-follow" value="<?= e($editCourse['image_url'] ?? '') ?>" placeholder="หรือใส่ URL / path เช่น images/courses/photo.jpg">
+                <small>อัปโหลดไฟล์ (สูงสุด 3MB) หรือใส่ลิงก์รูป</small>
                 <?php if (!empty($editCourse)): ?>
-                    <img src="<?= e(courseCoverUrl($editCourse)) ?>" alt="" style="max-width:200px;margin-top:.5rem;border-radius:8px">
+                    <img src="<?= e(courseCoverUrl($editCourse)) ?>" alt="" class="form-preview-img">
                 <?php endif; ?>
             </div>
             <div class="form-group">
@@ -156,7 +156,9 @@ $courses = getCourses(null, false);
             <div class="form-group">
                 <label><input type="checkbox" name="is_active" <?= ($editCourse['is_active'] ?? 1) ? 'checked' : '' ?>> เปิดใช้งาน</label>
             </div>
-            <button type="submit" class="btn btn-primary">บันทึก</button>
+            <div class="admin-form-actions">
+                <button type="submit" class="btn btn-primary">บันทึก</button>
+            </div>
         </form>
     </div>
 </div>
@@ -168,6 +170,7 @@ $courses = getCourses(null, false);
         <a href="<?= APP_URL ?>/admin/courses.php?action=add" class="btn btn-primary btn-sm">+ เพิ่มคอร์ส</a>
     </div>
     <div class="admin-card-body is-flush">
+        <div class="table-responsive">
         <table class="data-table">
             <thead>
                 <tr>
@@ -176,7 +179,7 @@ $courses = getCourses(null, false);
                     <th>หมวด</th>
                     <th>ราคา</th>
                     <th>สถานะ</th>
-                    <th>จัดการ</th>
+                    <th class="actions">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -188,19 +191,22 @@ $courses = getCourses(null, false);
                     <td><?= e(formatPrice((float) $c['price'])) ?></td>
                     <td><?= $c['is_active'] ? '<span class="badge badge-active">เปิด</span>' : '<span class="badge badge-rejected">ปิด</span>' ?></td>
                     <td class="actions">
-                        <a href="<?= APP_URL ?>/public/course.php?slug=<?= e(urlencode($c['slug'])) ?>" target="_blank">ดู</a>
-                        <a href="?action=edit&id=<?= (int) $c['id'] ?>">แก้ไข</a>
-                        <form method="post" style="display:inline" onsubmit="return confirm('ลบคอร์สนี้?')">
+                        <div class="table-actions">
+                        <a href="<?= APP_URL ?>/public/course.php?slug=<?= e(urlencode($c['slug'])) ?>" target="_blank" rel="noopener" class="btn btn-outline btn-sm">ดู</a>
+                        <a href="?action=edit&id=<?= (int) $c['id'] ?>" class="btn btn-secondary btn-sm">แก้ไข</a>
+                        <form method="post" onsubmit="return confirm('ลบคอร์สนี้?')">
                             <?= csrfField() ?>
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
                             <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
                         </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 <?php endif; ?>

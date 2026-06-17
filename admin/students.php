@@ -126,7 +126,7 @@ $studentStatusBadge = static function (array $student) use ($statusLabels): arra
                     </td>
                     <td class="students-col-actions">
                         <button type="button" class="students-icon-btn" data-open-student="<?= (int) $s['id'] ?>" aria-label="จัดการสิทธิ์ <?= e($s['full_name']) ?>" title="จัดการสิทธิ์">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                            <?= lucide_icon('square-pen', ['size' => 18]) ?>
                         </button>
                     </td>
                 </tr>
@@ -143,7 +143,7 @@ $studentStatusBadge = static function (array $student) use ($statusLabels): arra
     <div class="admin-modal-backdrop" data-close-student-modal></div>
     <div class="admin-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle">
         <button type="button" class="admin-modal-close" data-close-student-modal aria-label="ปิด">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            <?= lucide_icon('x', ['size' => 20]) ?>
         </button>
         <?php foreach ($students as $s): ?>
         <?php $studentEnrollments = $enrollmentsByStudent[(int) $s['id']] ?? []; ?>
@@ -186,7 +186,7 @@ $studentStatusBadge = static function (array $student) use ($statusLabels): arra
                                         <input type="hidden" name="enrollment_id" value="<?= (int) $en['id'] ?>">
                                         <input type="hidden" name="student_id" value="<?= (int) $s['id'] ?>">
                                         <button type="submit" name="status" value="active" class="students-icon-btn students-icon-btn--open" title="เปิดสิทธิ์" aria-label="เปิดสิทธิ์">
-                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+                                            <?= lucide_icon('user-check', ['size' => 18]) ?>
                                         </button>
                                     </form>
                                     <?php endif; ?>
@@ -197,7 +197,7 @@ $studentStatusBadge = static function (array $student) use ($statusLabels): arra
                                         <input type="hidden" name="enrollment_id" value="<?= (int) $en['id'] ?>">
                                         <input type="hidden" name="student_id" value="<?= (int) $s['id'] ?>">
                                         <button type="submit" name="status" value="cancelled" class="students-icon-btn students-icon-btn--cancel" title="ยกเลิกสิทธิ์" aria-label="ยกเลิกสิทธิ์">
-                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                                            <?= lucide_icon('x', ['size' => 18]) ?>
                                         </button>
                                     </form>
                                     <?php endif; ?>

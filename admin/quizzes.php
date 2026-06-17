@@ -1,11 +1,10 @@
 <?php
 declare(strict_types=1);
 
-$pageTitle = 'แบบทดสอบ';
-require_once dirname(__DIR__) . '/includes/admin_header.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/quiz.php';
+requireAdmin();
 
-$message = flash('admin_success');
 $filterCourse = (int) ($_GET['course_id'] ?? 0);
 $quizId = (int) ($_GET['quiz_id'] ?? 0);
 $action = $_GET['action'] ?? 'list';
@@ -84,6 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$pageTitle = 'แบบทดสอบ';
+require_once dirname(__DIR__) . '/includes/admin_header.php';
+
+$message = flash('admin_success');
+
 $courses = getCourses(null, false);
 $quizzes = [];
 $sql = 'SELECT q.*, c.title AS course_title FROM quizzes q JOIN courses c ON c.id = q.course_id';
@@ -155,8 +159,10 @@ if ($editQuestionId && $manageQuiz) {
                     <input type="number" name="sort_order" class="form-control" value="<?= (int) ($editQuiz['sort_order'] ?? 0) ?>">
                 </div>
             </div>
-            <label><input type="checkbox" name="is_published" <?= ($editQuiz['is_published'] ?? 1) ? 'checked' : '' ?>> เผยแพร่</label>
-            <div style="margin-top:1rem">
+            <div class="form-group">
+                <label><input type="checkbox" name="is_published" <?= ($editQuiz['is_published'] ?? 1) ? 'checked' : '' ?>> เผยแพร่</label>
+            </div>
+            <div class="admin-form-actions">
                 <button type="submit" class="btn btn-primary">บันทึก</button>
             </div>
         </form>
@@ -170,7 +176,7 @@ if ($editQuestionId && $manageQuiz) {
         <a href="<?= APP_URL ?>/admin/quizzes.php" class="btn btn-secondary btn-sm">กลับ</a>
     </div>
     <div class="admin-card-body">
-        <form method="post" style="margin-bottom:2rem;padding:1rem;background:#f9fafb;border-radius:8px">
+        <form method="post" class="admin-subform-panel">
             <?= csrfField() ?>
             <input type="hidden" name="action" value="save_question">
             <input type="hidden" name="quiz_id" value="<?= (int) $quizId ?>">
@@ -200,35 +206,41 @@ if ($editQuestionId && $manageQuiz) {
                     <input type="number" name="sort_order" class="form-control" value="<?= (int) ($editQuestion['sort_order'] ?? 0) ?>">
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary"><?= $editQuestion ? 'อัปเดตคำถาม' : 'เพิ่มคำถาม' ?></button>
+            <div class="admin-form-actions admin-form-actions--compact">
+            <button type="submit" class="btn btn-primary btn-sm"><?= $editQuestion ? 'อัปเดตคำถาม' : 'เพิ่มคำถาม' ?></button>
             <?php if ($editQuestion): ?>
-            <a href="<?= APP_URL ?>/admin/quizzes.php?action=questions&quiz_id=<?= $quizId ?>" class="btn btn-secondary">ยกเลิกแก้ไข</a>
+            <a href="<?= APP_URL ?>/admin/quizzes.php?action=questions&quiz_id=<?= $quizId ?>" class="btn btn-secondary btn-sm">ยกเลิกแก้ไข</a>
             <?php endif; ?>
+            </div>
         </form>
 
+        <div class="table-responsive">
         <table class="data-table">
-            <thead><tr><th>#</th><th>คำถาม</th><th>คำตอบ</th><th>จัดการ</th></tr></thead>
+            <thead><tr><th>#</th><th>คำถาม</th><th>คำตอบ</th><th class="actions">จัดการ</th></tr></thead>
             <tbody>
                 <?php foreach ($questions as $i => $q): ?>
                 <tr>
                     <td><?= $i + 1 ?></td>
                     <td><?= e($q['question_text']) ?></td>
                     <td><?= e($q['correct_key']) ?></td>
-                    <td>
+                    <td class="actions">
+                        <div class="table-actions">
                         <a href="<?= APP_URL ?>/admin/quizzes.php?action=questions&quiz_id=<?= $quizId ?>&qid=<?= (int) $q['id'] ?>" class="btn btn-secondary btn-sm">แก้ไข</a>
-                        <form method="post" style="display:inline" onsubmit="return confirm('ลบคำถาม?')">
+                        <form method="post" onsubmit="return confirm('ลบคำถาม?')">
                             <?= csrfField() ?>
                             <input type="hidden" name="action" value="delete_question">
                             <input type="hidden" name="quiz_id" value="<?= $quizId ?>">
                             <input type="hidden" name="question_id" value="<?= (int) $q['id'] ?>">
                             <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
                         </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <?php if (!$questions): ?><p style="color:#6b7280">ยังไม่มีคำถาม</p><?php endif; ?>
+        </div>
+        <?php if (!$questions): ?><p class="table-empty">ยังไม่มีคำถาม</p><?php endif; ?>
     </div>
 </div>
 
@@ -238,8 +250,8 @@ if ($editQuestionId && $manageQuiz) {
         <h2>แบบทดสอบ (Quiz)</h2>
         <a href="<?= APP_URL ?>/admin/quizzes.php?action=add" class="btn btn-primary btn-sm">เพิ่มแบบทดสอบ</a>
     </div>
-    <div class="admin-card-body">
-        <form method="get" class="admin-inline-form" style="margin-bottom:1rem">
+    <div class="admin-card-toolbar">
+        <form method="get" class="admin-inline-form">
             <select name="course_id" class="form-control">
                 <option value="0">ทุกคอร์ส</option>
                 <?php foreach ($courses as $c): ?>
@@ -248,9 +260,13 @@ if ($editQuestionId && $manageQuiz) {
             </select>
             <button type="submit" class="btn btn-secondary btn-sm">กรอง</button>
         </form>
+    </div>
+    <div class="admin-card-body is-flush">
+        <?php if ($quizzes): ?>
+        <div class="table-responsive">
         <table class="data-table">
             <thead>
-                <tr><th>คอร์ส</th><th>ชื่อ</th><th>ผ่าน</th><th>สถานะ</th><th>จัดการ</th></tr>
+                <tr><th>คอร์ส</th><th>ชื่อ</th><th>ผ่าน</th><th>สถานะ</th><th class="actions">จัดการ</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($quizzes as $q): ?>
@@ -259,8 +275,9 @@ if ($editQuestionId && $manageQuiz) {
                     <td><?= e($q['title']) ?></td>
                     <td><?= (int) $q['pass_score'] ?>%</td>
                     <td><?= $q['is_published'] ? 'เผยแพร่' : 'ซ่อน' ?></td>
-                    <td style="display:flex;gap:.25rem;flex-wrap:wrap">
-                        <a href="<?= APP_URL ?>/admin/quizzes.php?action=questions&quiz_id=<?= (int) $q['id'] ?>" class="btn btn-primary btn-sm">คำถาม</a>
+                    <td class="actions">
+                        <div class="table-actions">
+                        <a href="<?= APP_URL ?>/admin/quizzes.php?action=questions&quiz_id=<?= (int) $q['id'] ?>" class="btn btn-outline btn-sm">คำถาม</a>
                         <a href="<?= APP_URL ?>/admin/quizzes.php?action=edit&quiz_id=<?= (int) $q['id'] ?>" class="btn btn-secondary btn-sm">แก้ไข</a>
                         <form method="post" onsubmit="return confirm('ลบแบบทดสอบ?')">
                             <?= csrfField() ?>
@@ -268,12 +285,16 @@ if ($editQuestionId && $manageQuiz) {
                             <input type="hidden" name="id" value="<?= (int) $q['id'] ?>">
                             <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
                         </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <?php if (!$quizzes): ?><p style="color:#6b7280">ยังไม่มีแบบทดสอบ</p><?php endif; ?>
+        </div>
+        <?php else: ?>
+        <p class="table-empty">ยังไม่มีแบบทดสอบ — <a href="<?= APP_URL ?>/admin/quizzes.php?action=add">เพิ่มแบบทดสอบ</a></p>
+        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>

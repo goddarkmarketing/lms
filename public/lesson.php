@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/includes/access.php';
 
 require_once dirname(__DIR__) . '/includes/progress.php';
 require_once dirname(__DIR__) . '/includes/instructor.php';
+require_once dirname(__DIR__) . '/includes/game.php';
 
 $lessonId = isset($_GET['lesson_id']) ? (int) $_GET['lesson_id'] : 0;
 
@@ -147,6 +148,7 @@ if ($hasAccess && $videoUrl !== '') {
 
 $instructor = getInstructorProfile();
 $instructorPhotoUrl = instructorPhotoUrl($instructor);
+$courseGames = ($hasAccess && $student) ? getGamesByCourse($courseId) : [];
 
 require_once dirname(__DIR__) . '/includes/header.php';
 
@@ -187,13 +189,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
 
                     <div class="lesson-locked-icon" aria-hidden="true">
 
-                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.75">
-
-                            <rect x="3" y="11" width="18" height="11" rx="2"></rect>
-
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-
-                        </svg>
+                        <?= lucide_icon('lock', ['size' => 40, 'stroke' => '1.75']) ?>
 
                     </div>
 
@@ -304,7 +300,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
 
                     <p class="lesson-complete-done">
 
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                        <?= lucide_icon('circle-check', ['size' => 18, 'stroke' => '2.5']) ?>
 
                         เรียนจบบทนี้แล้ว — สามารถกลับมาทบทวนได้ทุกเมื่อ
 
@@ -462,7 +458,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
 
                                 <span class="lesson-nav-status" title="เรียนจบแล้ว">
 
-                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+                                    <?= lucide_icon('circle-check', ['size' => 14, 'stroke' => '2.5']) ?>
 
                                 </span>
 
@@ -477,7 +473,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                                 <span class="lesson-nav-link-title"><?= e($courseLesson['title']) ?></span>
 
                                 <span class="lesson-nav-status" title="ต้องซื้อคอร์สก่อน">
-                                    <svg class="icon-lock" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+                                    <?= lucide_icon('lock', ['size' => 16, 'class' => 'icon-lock']) ?>
                                 </span>
 
                             </span>
@@ -497,6 +493,12 @@ require_once dirname(__DIR__) . '/includes/header.php';
                     <?php endif; ?>
 
                 </div>
+
+
+
+                <?php if ($courseGames): ?>
+                <?php $games = $courseGames; $variant = 'sidebar'; require dirname(__DIR__) . '/includes/views/course_games_block.php'; ?>
+                <?php endif; ?>
 
 
 

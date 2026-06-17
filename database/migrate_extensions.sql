@@ -111,3 +111,34 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 
 INSERT IGNORE INTO coupons (code, discount_type, discount_value, min_amount, max_uses, is_active) VALUES
 ('WENXIN10', 'percent', 10, 0, 0, 1);
+
+CREATE TABLE IF NOT EXISTS announcements (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  title VARCHAR(200) NOT NULL,
+  excerpt VARCHAR(500) DEFAULT NULL,
+  body TEXT NOT NULL,
+  image_url VARCHAR(255) DEFAULT NULL,
+  attachment_url VARCHAR(255) DEFAULT NULL,
+  attachment_name VARCHAR(255) DEFAULT NULL,
+  category ENUM('general','promo','course','event') NOT NULL DEFAULT 'general',
+  is_pinned TINYINT(1) DEFAULT 0,
+  is_published TINYINT(1) DEFAULT 1,
+  published_at DATETIME DEFAULT NULL,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_announcements_published (is_published, published_at, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS course_games (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  course_id INT UNSIGNED NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  game_url VARCHAR(500) NOT NULL,
+  is_published TINYINT(1) DEFAULT 1,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

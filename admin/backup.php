@@ -110,6 +110,7 @@ require_once dirname(__DIR__) . '/includes/admin_header.php';
                         <td><?= e(date('H:i:s', $backup['created_at'])) ?></td>
                         <td><?= e(formatBackupSize($backup['size'])) ?></td>
                         <td class="actions">
+                            <div class="table-actions">
                             <a
                                 href="<?= e(APP_URL . '/admin/backup.php?action=download&file=' . urlencode($backup['filename'])) ?>"
                                 class="btn btn-outline btn-sm"
@@ -120,6 +121,7 @@ require_once dirname(__DIR__) . '/includes/admin_header.php';
                                 <input type="hidden" name="file" value="<?= e($backup['filename']) ?>">
                                 <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
                             </form>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>

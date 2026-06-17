@@ -2,6 +2,6 @@
         </div>
     </div>
 </div>
-<script src="<?= asset('js/admin.js') ?>?v=3"></script>
+<script src="<?= asset('js/admin.js') ?>?v=6"></script>
 </body>
 </html>

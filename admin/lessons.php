@@ -151,8 +151,8 @@ $lessons = $stmt->fetchAll();
             <div class="form-group">
                 <label>เอกสารประกอบ</label>
                 <input type="file" name="document_file" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx">
-                <input type="text" name="document_url" class="form-control" style="margin-top:.5rem" value="<?= e($editLesson['document_url'] ?? '') ?>" placeholder="หรือใส่ URL เอกสาร">
-                <small style="color:#6b7280">อัปโหลด PDF/DOC/PPT (สูงสุด 10MB) หรือใส่ลิงก์</small>
+                <input type="text" name="document_url" class="form-control form-control-follow" value="<?= e($editLesson['document_url'] ?? '') ?>" placeholder="หรือใส่ URL เอกสาร">
+                <small>อัปโหลด PDF/DOC/PPT (สูงสุด 10MB) หรือใส่ลิงก์</small>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -170,29 +170,32 @@ $lessons = $stmt->fetchAll();
             <div class="form-group">
                 <label><input type="checkbox" name="is_published" <?= ($editLesson['is_published'] ?? 1) ? 'checked' : '' ?>> เผยแพร่</label>
             </div>
-            <button type="submit" class="btn btn-primary">บันทึก</button>
+            <div class="admin-form-actions">
+                <button type="submit" class="btn btn-primary">บันทึก</button>
+            </div>
         </form>
     </div>
 </div>
 <?php else: ?>
+
+<?php
+$filterCourseTitle = '';
+if ($filterCourse) {
+    foreach ($courses as $c) {
+        if ((int) $c['id'] === $filterCourse) {
+            $filterCourseTitle = (string) $c['title'];
+            break;
+        }
+    }
+}
+?>
 
 <div class="admin-card">
     <div class="admin-card-header">
         <h2>บทเรียนทั้งหมด</h2>
         <a href="?action=add<?= $filterCourse ? '&course_id=' . $filterCourse : '' ?>" class="btn btn-primary btn-sm">+ เพิ่มบทเรียน</a>
     </div>
-    <div class="admin-card-body">
-        <?php
-        $filterCourseTitle = '';
-        if ($filterCourse) {
-            foreach ($courses as $c) {
-                if ((int) $c['id'] === $filterCourse) {
-                    $filterCourseTitle = (string) $c['title'];
-                    break;
-                }
-            }
-        }
-        ?>
+    <div class="admin-card-toolbar">
         <div class="admin-filter-toolbar">
             <p class="admin-filter-active">
                 <?php if ($filterCourse): ?>
@@ -215,6 +218,9 @@ $lessons = $stmt->fetchAll();
                 <?php endif; ?>
             </form>
         </div>
+    </div>
+    <div class="admin-card-body is-flush">
+        <div class="table-responsive">
         <table class="data-table">
             <thead>
                 <tr>
@@ -222,7 +228,7 @@ $lessons = $stmt->fetchAll();
                     <th>บทเรียน</th>
                     <th>วิดีโอ</th>
                     <th>เอกสาร</th>
-                    <th>จัดการ</th>
+                    <th class="actions">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -233,19 +239,22 @@ $lessons = $stmt->fetchAll();
                     <td><?= $l['video_url'] ? 'มี' : '-' ?></td>
                     <td><?= $l['document_url'] ? 'มี' : '-' ?></td>
                     <td class="actions">
-                        <a href="?action=edit&amp;id=<?= (int) $l['id'] ?><?= $filterCourse ? '&amp;course_id=' . $filterCourse : '' ?>">แก้ไข</a>
-                        <form method="post" style="display:inline" onsubmit="return confirm('ลบบทเรียน?')">
+                        <div class="table-actions">
+                        <a href="?action=edit&amp;id=<?= (int) $l['id'] ?><?= $filterCourse ? '&amp;course_id=' . $filterCourse : '' ?>" class="btn btn-secondary btn-sm">แก้ไข</a>
+                        <form method="post" onsubmit="return confirm('ลบบทเรียน?')">
                             <?= csrfField() ?>
                             <?php if ($filterCourse): ?><input type="hidden" name="filter_course_id" value="<?= $filterCourse ?>"><?php endif; ?>
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
                             <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
                         </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 <?php endif; ?>

@@ -148,11 +148,11 @@ try {
 <div class="admin-card">
     <div class="admin-card-header"><h2>ทางลัด</h2></div>
     <div class="admin-card-body admin-shortcuts">
-        <a href="<?= APP_URL ?>/admin/courses.php?action=add" class="btn btn-primary">เพิ่มคอร์ส</a>
-        <a href="<?= APP_URL ?>/admin/quizzes.php?action=add" class="btn btn-secondary">เพิ่มแบบทดสอบ</a>
-        <a href="<?= APP_URL ?>/admin/coupons.php" class="btn btn-secondary">คูปองส่วนลด</a>
-        <a href="<?= APP_URL ?>/admin/students.php" class="btn btn-secondary">นักเรียน</a>
-        <a href="<?= APP_URL ?>/admin/settings.php" class="btn btn-secondary">ตั้งค่า</a>
+        <a href="<?= APP_URL ?>/admin/courses.php?action=add" class="btn btn-primary btn-sm">เพิ่มคอร์ส</a>
+        <a href="<?= APP_URL ?>/admin/quizzes.php?action=add" class="btn btn-secondary btn-sm">เพิ่มแบบทดสอบ</a>
+        <a href="<?= APP_URL ?>/admin/coupons.php" class="btn btn-secondary btn-sm">คูปองส่วนลด</a>
+        <a href="<?= APP_URL ?>/admin/students.php" class="btn btn-secondary btn-sm">นักเรียน</a>
+        <a href="<?= APP_URL ?>/admin/settings.php" class="btn btn-secondary btn-sm">ตั้งค่า</a>
     </div>
 </div>
 

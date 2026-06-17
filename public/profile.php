@@ -7,6 +7,7 @@ require_once dirname(__DIR__) . '/includes/checkout_flow.php';
 require_once dirname(__DIR__) . '/includes/progress.php';
 require_once dirname(__DIR__) . '/includes/certificate.php';
 require_once dirname(__DIR__) . '/includes/quiz.php';
+require_once dirname(__DIR__) . '/includes/game.php';
 
 requireStudentLogin('/public/profile.php');
 

@@ -146,7 +146,7 @@ $renderCouponForm = static function (?array $coupon): void {
                             </span>
                         </td>
                         <td class="coupons-col-actions">
-                            <div class="coupons-row-actions">
+                            <div class="table-actions coupons-row-actions">
                                 <button type="button" class="btn btn-secondary btn-sm" data-open-coupon="<?= (int) $c['id'] ?>">แก้ไข</button>
                                 <form method="post" class="coupons-delete-form" onsubmit="return confirm('ลบ?')">
                                     <?= csrfField() ?>
@@ -168,7 +168,7 @@ $renderCouponForm = static function (?array $coupon): void {
     <div class="admin-modal-backdrop" data-close-coupon-modal></div>
     <div class="admin-modal-dialog coupon-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="couponModalTitle">
         <button type="button" class="admin-modal-close" data-close-coupon-modal aria-label="ปิด">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            <?= lucide_icon('x', ['size' => 20]) ?>
         </button>
 
         <div class="coupon-modal-panel" id="coupon-panel-new" data-coupon-panel hidden>

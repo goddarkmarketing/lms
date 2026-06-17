@@ -39,6 +39,62 @@ function storeCourseCoverUpload(array $file): string|false|null
     return 'uploads/courses/' . $filename;
 }
 
+function storeAnnouncementImageUpload(array $file): string|false|null
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        flash('admin_error', 'อัปโหลดรูปไม่สำเร็จ');
+        return false;
+    }
+    if (($file['size'] ?? 0) > MAX_COURSE_IMAGE_BYTES) {
+        flash('admin_error', 'รูปใหญ่เกิน 3MB');
+        return false;
+    }
+    $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+        flash('admin_error', 'รูปรองรับเฉพาะ JPG, PNG, WEBP, GIF');
+        return false;
+    }
+    ensureUploadDir(UPLOAD_ANNOUNCEMENTS_PATH);
+    $filename = 'ann_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $dest = UPLOAD_ANNOUNCEMENTS_PATH . '/' . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        flash('admin_error', 'บันทึกรูปไม่สำเร็จ');
+        return false;
+    }
+    return 'uploads/announcements/' . $filename;
+}
+
+function storeAnnouncementPdfUpload(array $file): string|false|null
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        flash('admin_error', 'อัปโหลดไฟล์ PDF ไม่สำเร็จ');
+        return false;
+    }
+    if (($file['size'] ?? 0) > MAX_LESSON_DOC_BYTES) {
+        flash('admin_error', 'ไฟล์ PDF ใหญ่เกิน 10MB');
+        return false;
+    }
+    $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+    if ($ext !== 'pdf') {
+        flash('admin_error', 'แนบได้เฉพาะไฟล์ PDF');
+        return false;
+    }
+    ensureUploadDir(UPLOAD_ANNOUNCEMENTS_PATH);
+    $filename = 'ann_pdf_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.pdf';
+    $dest = UPLOAD_ANNOUNCEMENTS_PATH . '/' . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        flash('admin_error', 'บันทึกไฟล์ PDF ไม่สำเร็จ');
+        return false;
+    }
+    return 'uploads/announcements/' . $filename;
+}
+
 function storeLessonDocumentUpload(array $file): string|false|null
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {

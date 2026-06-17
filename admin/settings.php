@@ -52,6 +52,7 @@ $settings = getSettings();
 <div class="admin-card">
     <div class="admin-card-header">
         <h2>ตั้งค่าหน้าเว็บและการชำระเงิน</h2>
+        <a href="<?= APP_URL ?>/admin/content.php" class="btn btn-outline btn-sm">จัดการเนื้อหาเว็บ</a>
     </div>
     <div class="admin-card-body">
         <form method="post">
@@ -155,7 +156,7 @@ $settings = getSettings();
                 </div>
             </div>
 
-            <h4 style="margin:1rem 0 .75rem;font-size:.95rem;color:#4b5563">ตั้งค่า SMTP</h4>
+            <h4 class="admin-subsection-title">ตั้งค่า SMTP</h4>
             <div class="form-row">
                 <div class="form-group">
                     <label>SMTP Host</label>
@@ -296,7 +297,9 @@ $settings = getSettings();
             </div>
 
             <div class="admin-form-actions">
+            <div class="admin-form-actions">
                 <button type="submit" class="btn btn-primary">บันทึกการตั้งค่า</button>
+            </div>
             </div>
         </form>
     </div>

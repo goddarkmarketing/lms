@@ -291,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
     toast.setAttribute('role', 'status');
     toast.innerHTML = `
       <span class="toast-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 6L9 17l-5-5"></path>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5"/>
         </svg>
       </span>
       <span class="toast-text">${escapeHtml(message)}</span>

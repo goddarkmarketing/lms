@@ -173,3 +173,122 @@
     showCouponPanel(openPanel);
   }
 })();
+
+(function () {
+  var slipModal = document.getElementById('paymentSlipModal');
+  if (!slipModal) return;
+
+  var slipImage = document.getElementById('paymentSlipImage');
+  var slipPdf = document.getElementById('paymentSlipPdf');
+  var slipMeta = document.getElementById('paymentSlipModalMeta');
+  var slipOpenTab = document.getElementById('paymentSlipOpenTab');
+  var slipDialog = slipModal.querySelector('.payment-slip-dialog');
+  var slipFrame = document.getElementById('paymentSlipFrame');
+  var slipBody = slipModal.querySelector('.payment-slip-modal-body');
+
+  function resetSlipLayout() {
+    [slipDialog, slipBody, slipFrame, slipImage].forEach(function (el) {
+      if (!el) return;
+      el.style.width = '';
+      el.style.height = '';
+    });
+    if (slipImage) {
+      slipImage.style.width = '';
+      slipImage.style.height = '';
+    }
+  }
+
+  function fitSlipImage(img) {
+    if (!img || !img.naturalWidth) return;
+    var padX = 48;
+    var padY = 130;
+    var maxW = Math.min(window.innerWidth * 0.9 - padX, 720);
+    var maxH = Math.min(window.innerHeight * 0.82 - padY, 780);
+    var scale = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
+    var w = Math.round(img.naturalWidth * scale);
+    var h = Math.round(img.naturalHeight * scale);
+    img.style.width = w + 'px';
+    img.style.height = h + 'px';
+    if (slipFrame) {
+      slipFrame.style.width = w + 8 + 'px';
+      slipFrame.style.height = h + 8 + 'px';
+    }
+    if (slipDialog) {
+      slipDialog.style.width = w + padX + 'px';
+    }
+  }
+
+  function closeSlipModal() {
+    slipModal.hidden = true;
+    document.body.classList.remove('admin-modal-open');
+    if (slipDialog) {
+      slipDialog.classList.remove('is-pdf');
+    }
+    resetSlipLayout();
+    if (slipImage) {
+      slipImage.hidden = true;
+      slipImage.removeAttribute('src');
+    }
+    if (slipPdf) {
+      slipPdf.hidden = true;
+      slipPdf.removeAttribute('src');
+    }
+  }
+
+  function openSlipModal(url, isImage, payer) {
+    if (!url) return;
+    resetSlipLayout();
+    if (slipMeta) {
+      slipMeta.textContent = payer ? 'จาก: ' + payer : '';
+    }
+    if (slipOpenTab) {
+      slipOpenTab.href = url;
+    }
+    if (slipDialog) {
+      slipDialog.classList.toggle('is-pdf', !isImage);
+    }
+    if (isImage && slipImage) {
+      slipImage.onload = function () {
+        fitSlipImage(slipImage);
+      };
+      slipImage.src = url;
+      slipImage.hidden = false;
+      if (slipImage.complete && slipImage.naturalWidth) {
+        fitSlipImage(slipImage);
+      }
+      if (slipPdf) {
+        slipPdf.hidden = true;
+        slipPdf.removeAttribute('src');
+      }
+    } else if (slipPdf) {
+      slipPdf.src = url;
+      slipPdf.hidden = false;
+      if (slipImage) {
+        slipImage.hidden = true;
+        slipImage.removeAttribute('src');
+      }
+    }
+    slipModal.hidden = false;
+    document.body.classList.add('admin-modal-open');
+  }
+
+  document.querySelectorAll('[data-open-slip]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openSlipModal(
+        btn.getAttribute('data-slip-url') || '',
+        btn.getAttribute('data-slip-image') === '1',
+        btn.getAttribute('data-slip-payer') || ''
+      );
+    });
+  });
+
+  slipModal.querySelectorAll('[data-close-slip-modal]').forEach(function (el) {
+    el.addEventListener('click', closeSlipModal);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !slipModal.hidden) {
+      closeSlipModal();
+    }
+  });
+})();

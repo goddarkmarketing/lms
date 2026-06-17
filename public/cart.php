@@ -30,12 +30,7 @@ $appliedCoupon = getAppliedCoupon();
 
         <header class="checkout-main-header cart-page-header">
             <span class="checkout-main-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 6h15l-1.5 9h-12z"></path>
-                    <path d="M6 6l-2-2"></path>
-                    <circle cx="9" cy="20" r="1"></circle>
-                    <circle cx="18" cy="20" r="1"></circle>
-                </svg>
+                <?= lucide_icon('shopping-cart', ['size' => 28, 'stroke' => '1.75']) ?>
             </span>
             <div>
                 <h1>ตะกร้าของฉัน</h1>

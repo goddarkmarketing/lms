@@ -34,20 +34,8 @@ $pageTitle = 'เข้าสู่ระบบผู้ดูแล';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle) ?> | Wenxin Admin</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="preload" href="<?= e(headingFontAsset()) ?>" as="font" type="font/ttf" crossorigin>
-    <style>
-      @font-face {
-        font-family: 'DB Adman X';
-        src: url('<?= headingFontAsset() ?>') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-    </style>
-    <link rel="stylesheet" href="<?= asset('css/admin.css') ?>?v=21">
+    <?php require dirname(__DIR__) . '/includes/views/fonts_head.php'; ?>
+    <link rel="stylesheet" href="<?= asset('css/admin.css') ?>?v=24">
     <link rel="icon" href="<?= e(brandLogoAsset()) ?>" type="image/svg+xml">
 </head>
 <body class="admin-auth-body">

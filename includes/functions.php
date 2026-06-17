@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/icons.php';
 
 function e(?string $value): string
 {
@@ -173,7 +174,7 @@ function brandLogoAsset(): string
 
 function headingFontAsset(): string
 {
-    return APP_URL . '/assets/fonts/DB-Adman-X.ttf';
+    return APP_URL . '/assets/fonts/BetterTogether/BetterTogether-Regular.woff2';
 }
 
 function fontAsset(): string
@@ -416,9 +417,10 @@ function formatPrice(?float $price): string
 function getSettings(): array
 {
     static $settings = null;
-    if ($settings !== null) {
+    if ($settings !== null && empty($GLOBALS['__lms_settings_force_reload'])) {
         return $settings;
     }
+    unset($GLOBALS['__lms_settings_force_reload']);
 
     try {
         $stmt = db()->query('SELECT setting_key, setting_value FROM site_settings');
@@ -446,6 +448,33 @@ function getSetting(string $key, string $default = ''): string
 {
     $settings = getSettings();
     return $settings[$key] ?? $default;
+}
+
+function resetSettingsCache(): void
+{
+    $GLOBALS['__lms_settings_force_reload'] = true;
+}
+
+function saveSetting(string $key, string $value): void
+{
+    $stmt = db()->prepare('
+        INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+    ');
+    $stmt->execute([$key, $value]);
+    resetSettingsCache();
+}
+
+function saveSettings(array $pairs): void
+{
+    $stmt = db()->prepare('
+        INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+    ');
+    foreach ($pairs as $key => $value) {
+        $stmt->execute([$key, (string) $value]);
+    }
+    resetSettingsCache();
 }
 
 function getCourses(?string $category = null, bool $activeOnly = true, ?string $search = null): array

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/access.php';
 require_once dirname(__DIR__) . '/includes/instructor.php';
+require_once dirname(__DIR__) . '/includes/game.php';
 
 $slug = $_GET['slug'] ?? '';
 if (!$slug) {
@@ -38,6 +39,12 @@ $audienceBullets = courseAudienceBullets($course);
 $includedItems = courseIncludedItems();
 $faqItems = courseFaqItems();
 $hasLessons = count($lessons) > 0;
+
+$student = currentStudent();
+$courseGames = [];
+if ($student && studentHasCourseAccess((int) $student['id'], (int) $course['id'])) {
+    $courseGames = getGamesByCourse((int) $course['id']);
+}
 
 $instructor = getInstructorProfile();
 $instructorPhotoUrl = instructorPhotoUrl($instructor);
@@ -105,15 +112,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                     <?php foreach ($includedItems as $item): ?>
                         <div class="course-included-item">
                             <div class="course-included-icon" aria-hidden="true">
-                                <?php if ($item['icon'] === 'video'): ?>
-                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                <?php elseif ($item['icon'] === 'doc'): ?>
-                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
-                                <?php elseif ($item['icon'] === 'device'): ?>
-                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg>
-                                <?php else: ?>
-                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                <?php endif; ?>
+                                <?= courseIncludedIcon($item['icon']) ?>
                             </div>
                             <div>
                                 <strong><?= e($item['title']) ?></strong>
@@ -151,7 +150,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                                             <span class="badge badge-gold lesson-preview-badge">ทดลองเรียนฟรี</span>
                                         <?php elseif (!$canAccess): ?>
                                             <span class="badge lesson-lock-badge" title="ต้องซื้อคอร์สก่อนเรียน">
-                                                <svg class="icon-lock" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+                                                <?= lucide_icon('lock', ['size' => 13, 'class' => 'icon-lock']) ?>
                                                 ล็อก
                                             </span>
                                         <?php endif; ?>
@@ -162,7 +161,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                                     <div class="lesson-list-meta">
                                         <?php if ($durationLabel): ?>
                                             <span class="lesson-meta-tag">
-                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6l3 2"></path></svg>
+                                                <?= lucide_icon('clock', ['size' => 14]) ?>
                                                 <?= e($durationLabel) ?>
                                             </span>
                                         <?php endif; ?>
@@ -181,6 +180,13 @@ require_once dirname(__DIR__) . '/includes/header.php';
                     <div class="lesson-empty">บทเรียนจะเพิ่มเติมเร็วๆ นี้ สามารถเพิ่มวิดีโอและเอกสารได้จากหลังบ้าน</div>
                 <?php endif; ?>
             </section>
+
+            <?php if ($courseGames): ?>
+            <section class="course-block">
+                <h2 class="course-block-title">เกมฝึกฝนในคอร์ส</h2>
+                <?php $games = $courseGames; $variant = 'course'; require dirname(__DIR__) . '/includes/views/course_games_block.php'; ?>
+            </section>
+            <?php endif; ?>
 
             <section class="course-block course-payment-info">
                 <h2 class="course-block-title">วิธีเรียนและชำระเงิน</h2>
@@ -214,29 +220,29 @@ require_once dirname(__DIR__) . '/includes/header.php';
             <ul class="course-sidebar-stats" aria-label="ข้อมูลคอร์ส">
                 <?php if (!empty($course['lesson_count'])): ?>
                 <li>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20"></path><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path></svg>
+                    <?= lucide_icon('book-open', ['size' => 16]) ?>
                     <span><strong><?= (int) $course['lesson_count'] ?></strong> บทเรียน</span>
                 </li>
                 <?php endif; ?>
                 <?php if (!empty($course['duration_hours'])): ?>
                 <li>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6l3 2"></path></svg>
+                    <?= lucide_icon('clock', ['size' => 16]) ?>
                     <span><strong><?= (int) $course['duration_hours'] ?></strong> ชั่วโมงโดยประมาณ</span>
                 </li>
                 <?php endif; ?>
                 <li>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"></path></svg>
+                    <?= lucide_icon('star', ['size' => 16]) ?>
                     <span>ระดับ <?= e(levelBadge($course['level'])) ?></span>
                 </li>
                 <?php if ($lessonStats['video'] > 0): ?>
                 <li>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <?= lucide_icon('play', ['size' => 16]) ?>
                     <span><strong><?= (int) $lessonStats['video'] ?></strong> บทมีวิดีโอ</span>
                 </li>
                 <?php endif; ?>
                 <?php if ($lessonStats['preview'] > 0): ?>
                 <li>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <?= lucide_icon('eye', ['size' => 16]) ?>
                     <span><strong><?= (int) $lessonStats['preview'] ?></strong> บททดลองฟรี</span>
                 </li>
                 <?php endif; ?>

@@ -19,6 +19,8 @@ define('UPLOAD_PATH', BASE_PATH . '/uploads/payments');
 define('UPLOAD_URL', APP_URL . '/uploads/payments');
 define('UPLOAD_COURSES_PATH', BASE_PATH . '/uploads/courses');
 define('UPLOAD_COURSES_URL', APP_URL . '/uploads/courses');
+define('UPLOAD_ANNOUNCEMENTS_PATH', BASE_PATH . '/uploads/announcements');
+define('UPLOAD_ANNOUNCEMENTS_URL', APP_URL . '/uploads/announcements');
 
 date_default_timezone_set('Asia/Bangkok');
 

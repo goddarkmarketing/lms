@@ -73,10 +73,7 @@ $omisePublicKey = omisePublicKey();
             <div class="checkout-main">
                 <header class="checkout-main-header">
                     <span class="checkout-main-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                            <path d="M2 10h20"></path>
-                        </svg>
+                        <?= lucide_icon('credit-card', ['size' => 28, 'stroke' => '1.75']) ?>
                     </span>
                     <h1>ชำระเงินซื้อคอร์สเรียน</h1>
                 </header>
@@ -111,7 +108,7 @@ $omisePublicKey = omisePublicKey();
                                                 <dd>
                                                     <span class="checkout-bank-number" id="checkoutBankNumber"><?= e($bankNumberDisplay) ?></span>
                                                     <button type="button" class="checkout-bank-copy js-copy-bank" data-copy="<?= e($bankDigits ?: $bankNumber) ?>" aria-label="คัดลอกเลขบัญชี">
-                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                                        <?= lucide_icon('copy', ['size' => 16]) ?>
                                                         <span class="checkout-bank-copy-label">คัดลอก</span>
                                                     </button>
                                                 </dd>
@@ -185,11 +182,7 @@ $omisePublicKey = omisePublicKey();
                                 <div class="checkout-slip-drop" id="slipDropZone">
                                     <input type="file" id="slip_image" name="slip_image" accept="image/*,.pdf" class="checkout-slip-input">
                                     <div class="checkout-slip-placeholder">
-                                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                            <polyline points="17 8 12 3 7 8"></polyline>
-                                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                                        </svg>
+                                        <?= lucide_icon('upload', ['size' => 32, 'stroke' => '1.5']) ?>
                                         <p><strong>คลิกหรือลากไฟล์</strong> มาวางที่นี่</p>
                                         <span>รองรับ JPG, PNG, PDF (ไม่เกิน 5MB)</span>
                                     </div>
@@ -203,18 +196,12 @@ $omisePublicKey = omisePublicKey();
                             </div>
 
                             <div class="checkout-secure-note">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <rect x="3" y="11" width="18" height="11" rx="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
+                                <?= lucide_icon('lock', ['size' => 18]) ?>
                                 <span>ข้อมูลของคุณปลอดภัย ทีมงาน Wenxin จะตรวจสอบและติดต่อกลับหลังได้รับหลักฐานการชำระเงิน</span>
                             </div>
 
                             <button type="submit" class="btn btn-primary btn-block checkout-submit">
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <rect x="3" y="11" width="18" height="11" rx="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
+                                <?= lucide_icon('lock', ['size' => 20]) ?>
                                 ยืนยันการชำระเงิน
                             </button>
                         </form>
@@ -293,10 +280,7 @@ $omisePublicKey = omisePublicKey();
             <aside class="checkout-sidebar">
                 <div class="checkout-summary-card">
                     <h2>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                        </svg>
+                        <?= lucide_icon('book-open', ['size' => 20, 'stroke' => '1.75']) ?>
                         สรุปคำสั่งซื้อ
                     </h2>
 
@@ -328,7 +312,7 @@ $omisePublicKey = omisePublicKey();
                     </dl>
 
                     <p class="checkout-summary-note">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <?= lucide_icon('circle-check', ['size' => 16]) ?>
                         หลังชำระเงิน ทีมงานจะเปิดสิทธิ์เรียนและติดต่อกลับทางอีเมลหรือ Line
                     </p>
                 </div>
@@ -338,9 +322,7 @@ $omisePublicKey = omisePublicKey();
                     <ul>
                         <li>
                             <span class="checkout-mini-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                </svg>
+                                <?= lucide_icon('shield', ['size' => 18, 'stroke' => '1.75']) ?>
                             </span>
                             <div class="checkout-mini-text">
                                 <strong>ปลอดภัย มั่นใจ</strong>
@@ -349,10 +331,7 @@ $omisePublicKey = omisePublicKey();
                         </li>
                         <li>
                             <span class="checkout-mini-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
+                                <?= lucide_icon('clock', ['size' => 18, 'stroke' => '1.75']) ?>
                             </span>
                             <div class="checkout-mini-text">
                                 <strong>รวดเร็ว</strong>
@@ -361,10 +340,7 @@ $omisePublicKey = omisePublicKey();
                         </li>
                         <li>
                             <span class="checkout-mini-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20"></path>
-                                    <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path>
-                                </svg>
+                                <?= lucide_icon('book-open', ['size' => 18, 'stroke' => '1.75']) ?>
                             </span>
                             <div class="checkout-mini-text">
                                 <strong>เรียนได้ทันที</strong>
@@ -379,9 +355,7 @@ $omisePublicKey = omisePublicKey();
                     <?php if (getSetting('phone')): ?>
                     <a href="tel:<?= e(preg_replace('/\D+/', '', getSetting('phone'))) ?>" class="checkout-help-item">
                         <span class="checkout-mini-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                            </svg>
+                            <?= lucide_icon('phone', ['size' => 18, 'stroke' => '1.75']) ?>
                         </span>
                         <div class="checkout-mini-text">
                             <strong><?= e(getSetting('phone')) ?></strong>
@@ -392,9 +366,7 @@ $omisePublicKey = omisePublicKey();
                     <?php if (getSetting('line_id')): ?>
                     <div class="checkout-help-item">
                         <span class="checkout-mini-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
+                            <?= lucide_icon('message-circle', ['size' => 18, 'stroke' => '1.75']) ?>
                         </span>
                         <div class="checkout-mini-text">
                             <strong>Line <?= e(getSetting('line_id')) ?></strong>
@@ -405,9 +377,7 @@ $omisePublicKey = omisePublicKey();
                     <?php if (getSetting('facebook_url')): ?>
                     <a href="<?= e(getSetting('facebook_url')) ?>" target="_blank" rel="noopener" class="checkout-help-item">
                         <span class="checkout-mini-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-                            </svg>
+                            <?= lucide_icon('facebook', ['size' => 18, 'stroke' => '1.75']) ?>
                         </span>
                         <div class="checkout-mini-text">
                             <strong>Facebook</strong>

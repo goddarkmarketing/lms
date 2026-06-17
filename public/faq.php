@@ -2,11 +2,13 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/homepage.php';
+require_once dirname(__DIR__) . '/includes/site_content.php';
 
 $pageTitle = 'คำถามที่พบบ่อย';
 require_once dirname(__DIR__) . '/includes/header.php';
 
 $faqItems = getFaqPageItems();
+$faqPageContent = getFaqPageContent();
 $lineUrl = lineContactUrl();
 ?>
 
@@ -17,8 +19,8 @@ $lineUrl = lineContactUrl();
             <span aria-hidden="true">/</span>
             <span>คำถามที่พบบ่อย</span>
         </nav>
-        <h1>คำถามที่พบบ่อย</h1>
-        <p>รวบรวมคำตอบสำหรับคำถามที่ผู้เรียนถามบ่อยที่สุด</p>
+        <h1><?= e($faqPageContent['page_title'] ?? '') ?></h1>
+        <p><?= e($faqPageContent['page_subtitle'] ?? '') ?></p>
     </div>
 </header>
 
@@ -31,8 +33,8 @@ $lineUrl = lineContactUrl();
 <section class="faq-page-cta">
     <div class="container faq-page-cta-inner">
         <div>
-            <h2>ไม่พบคำตอบที่ต้องการ?</h2>
-            <p>แอด Line หรือโทรหาทีมงาน Wenxin Chinese เราพร้อมให้คำปรึกษาเรื่องคอร์สและการสมัครเรียน</p>
+            <h2><?= e($faqPageContent['cta_title'] ?? '') ?></h2>
+            <p><?= e($faqPageContent['cta_text'] ?? '') ?></p>
         </div>
         <div class="faq-page-cta-actions">
             <a href="<?= e($lineUrl) ?>" class="btn btn-gold btn-lg" target="_blank" rel="noopener">แอด Line</a>

@@ -2,14 +2,16 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/homepage.php';
+require_once dirname(__DIR__) . '/includes/site_content.php';
 
 $pageTitle = 'ติดต่อเรา';
 require_once dirname(__DIR__) . '/includes/header.php';
 
+$contactContent = getContactContent();
 $lineUrl = lineContactUrl();
 $lineId = trim(getSetting('line_id', ''));
 $phone = trim(getSetting('phone', ''));
-$email = trim(getSetting('email_admin', ''));
+$email = publicContactEmail();
 $facebook = trim(getSetting('facebook_url', ''));
 $youtube = trim(getSetting('youtube_url', ''));
 $tiktok = trim(getSetting('tiktok_url', ''));
@@ -38,7 +40,7 @@ if ($phone !== '') {
         'label' => 'โทรศัพท์',
         'title' => 'โทรหาทีมงาน',
         'value' => $phone,
-        'hint' => 'จันทร์–อาทิตย์ 10:00–20:00 น.',
+        'hint' => $contactContent['phone_hours'] ?? 'จันทร์–อาทิตย์ 10:00–20:00 น.',
         'href' => 'tel:' . preg_replace('/\s+/', '', $phone),
         'external' => false,
         'cta' => 'โทรเลย',
@@ -63,7 +65,7 @@ if ($facebook !== '') {
         'tone' => 'facebook',
         'label' => 'Facebook',
         'title' => 'ติดตามข่าวสาร',
-        'value' => 'Wenxin Chinese',
+        'value' => $contactContent['facebook_label'] ?? 'Wenxin Chinese',
         'hint' => 'อัปเดตคอร์ส กิจกรรม และเทคนิคการเรียน',
         'href' => $facebook,
         'external' => true,
@@ -106,37 +108,27 @@ if ($tiktok !== '') {
             <span aria-hidden="true">/</span>
             <span>ติดต่อเรา</span>
         </nav>
-        <h1>ติดต่อเรา</h1>
-        <p>ทีมงาน Wenxin Chinese พร้อมให้คำปรึกษาเรื่องคอร์ส การสมัครเรียน และการชำระเงิน</p>
+        <h1><?= e($contactContent['header_title'] ?? 'ติดต่อเรา') ?></h1>
+        <p><?= e($contactContent['header_subtitle'] ?? '') ?></p>
     </div>
 </header>
 
 <section class="section contact-page-section" id="contact">
     <div class="container contact-page-layout">
         <div class="contact-page-intro-card">
-            <p class="contact-page-eyebrow">WENXIN CHINESE</p>
-            <h2>มีคำถาม? เราช่วยได้</h2>
-            <p class="contact-page-lead"><?= e($tagline) ?> เลือกช่องทางที่สะดวกที่สุด ทีมงานจะตอบกลับโดยเร็วที่สุด</p>
+            <p class="contact-page-eyebrow"><?= e($contactContent['intro_eyebrow'] ?? '') ?></p>
+            <h2><?= e($contactContent['intro_title'] ?? '') ?></h2>
+            <p class="contact-page-lead"><?= e($tagline) ?> <?= e($contactContent['intro_lead_suffix'] ?? '') ?></p>
 
             <ul class="contact-page-perks">
+                <?php foreach (($contactContent['perks'] ?? []) as $perk): ?>
                 <li>
                     <span class="contact-page-perk-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <?= lucide_icon('circle-check', ['size' => 20]) ?>
                     </span>
-                    <span>ปรึกษาคอร์ส HSK และการสอบได้ฟรี</span>
+                    <span><?= e($perk) ?></span>
                 </li>
-                <li>
-                    <span class="contact-page-perk-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </span>
-                    <span>ตอบกลับภายใน 24 ชั่วโมง (วันทำการ)</span>
-                </li>
-                <li>
-                    <span class="contact-page-perk-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    </span>
-                    <span>ข้อมูลของคุณปลอดภัย ไม่เปิดเผยต่อบุคคลที่สาม</span>
-                </li>
+                <?php endforeach; ?>
             </ul>
 
             <div class="contact-page-quick-links">
@@ -170,8 +162,8 @@ if ($tiktok !== '') {
 <section class="contact-page-bottom">
     <div class="container contact-page-bottom-inner">
         <div>
-            <h2>พร้อมเริ่มเรียนแล้ว?</h2>
-            <p>เลือกคอร์สที่เหมาะกับระดับของคุณ แล้วสมัครเรียนได้ทันที</p>
+            <h2><?= e($contactContent['bottom_title'] ?? '') ?></h2>
+            <p><?= e($contactContent['bottom_text'] ?? '') ?></p>
         </div>
         <div class="contact-page-bottom-actions">
             <a href="<?= APP_URL ?>/public/courses.php" class="btn btn-gold btn-lg">ดูคอร์สทั้งหมด</a>

@@ -39,8 +39,8 @@ $issuedDate = date('d/m/Y', strtotime($cert['issued_at']));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle) ?> | <?= e(getSetting('site_title')) ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=28">
+    <?php require dirname(__DIR__) . '/includes/views/fonts_head.php'; ?>
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=114">
     <style>
       .cert-page { padding: 2rem 1rem; background: #f3f4f6; min-height: 100vh; }
       .cert-frame {

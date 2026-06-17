@@ -5,6 +5,8 @@ uploads/payments/*
 !uploads/payments/.htaccess
 uploads/courses/*
 !uploads/courses/.gitkeep
+uploads/announcements/*
+!uploads/announcements/.gitkeep
 node_modules/
 test-results/
 playwright-report/

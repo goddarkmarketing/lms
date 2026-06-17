@@ -35,6 +35,7 @@ declare(strict_types=1);
             ? APP_URL . '/public/lesson.php?lesson_id=' . $lessonId
             : APP_URL . '/public/course.php?slug=' . urlencode($course['slug']);
         $quizzes = $isPending ? [] : getQuizzesByCourse($cid);
+        $games = $isPending ? [] : getGamesByCourse($cid);
         $cert = $certByCourse[$cid] ?? null;
         if (!$isPending && $prog['percent'] >= 100) {
             maybeMarkEnrollmentCompleted($studentId, $cid);
@@ -62,10 +63,7 @@ declare(strict_types=1);
             <?php endif; ?>
             <?php if ($isPending): ?>
             <div class="my-courses-pending-box">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M12 7v5l3 2"></path>
-                </svg>
+                <?= lucide_icon('clock', ['size' => 18]) ?>
                 <p>ได้รับการแจ้งชำระเงินแล้ว ทีมงานจะตรวจสอบและเปิดสิทธิ์เรียนภายใน 24 ชั่วโมง</p>
             </div>
             <?php else: ?>
@@ -84,6 +82,14 @@ declare(strict_types=1);
                 <span class="my-courses-quizzes-label">แบบทดสอบ:</span>
                 <?php foreach ($quizzes as $qz): ?>
                 <a href="<?= APP_URL ?>/public/quiz.php?quiz_id=<?= (int) $qz['id'] ?>" class="my-courses-quiz-link"><?= e($qz['title']) ?></a>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+            <?php if ($games): ?>
+            <div class="my-courses-quizzes my-courses-games">
+                <span class="my-courses-quizzes-label">เกมฝึกฝน:</span>
+                <?php foreach ($games as $gm): ?>
+                <a href="<?= e(gamePlayUrl((int) $gm['id'])) ?>" class="my-courses-quiz-link my-courses-game-link"><?= e($gm['title']) ?></a>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>

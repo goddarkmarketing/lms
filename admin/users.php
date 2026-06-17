@@ -72,14 +72,15 @@ if ($editId > 0) {
 <div class="admin-grid-2">
     <div class="admin-card">
         <div class="admin-card-header"><h2>รายชื่อผู้ดูแล</h2></div>
-        <div class="admin-card-body">
+        <div class="admin-card-body is-flush">
+            <div class="table-responsive">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>ชื่อผู้ใช้</th>
                         <th>ชื่อ</th>
                         <th>อีเมล</th>
-                        <th></th>
+                        <th class="actions">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,21 +89,24 @@ if ($editId > 0) {
                         <td><?= e($a['username']) ?></td>
                         <td><?= e($a['full_name']) ?></td>
                         <td><?= e($a['email'] ?? '-') ?></td>
-                        <td>
-                            <a href="?edit=<?= (int) $a['id'] ?>">แก้ไข</a>
+                        <td class="actions">
+                            <div class="table-actions">
+                            <a href="?edit=<?= (int) $a['id'] ?>" class="btn btn-secondary btn-sm">แก้ไข</a>
                             <?php if ((int) $a['id'] !== (int) ($admin['id'] ?? 0) && countAdmins() > 1): ?>
-                            <form method="post" style="display:inline;margin-left:.5rem" onsubmit="return confirm('ลบผู้ดูแลนี้?')">
+                            <form method="post" onsubmit="return confirm('ลบผู้ดูแลนี้?')">
                                 <?= csrfField() ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="admin_id" value="<?= (int) $a['id'] ?>">
-                                <button type="submit" class="btn-link">ลบ</button>
+                                <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
                             </form>
                             <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 
@@ -112,7 +116,7 @@ if ($editId > 0) {
         </div>
         <div class="admin-card-body">
             <?php if ($editAdmin): ?>
-            <form method="post" style="margin-bottom:2rem">
+            <form method="post" class="admin-subform-panel">
                 <?= csrfField() ?>
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" name="admin_id" value="<?= (int) $editAdmin['id'] ?>">
@@ -132,7 +136,7 @@ if ($editId > 0) {
                 <a href="<?= APP_URL ?>/admin/users.php" class="btn btn-outline">ยกเลิก</a>
             </form>
 
-            <h3 style="font-size:1rem;margin-bottom:1rem">เปลี่ยนรหัสผ่าน</h3>
+            <h3 class="admin-subsection-title">เปลี่ยนรหัสผ่าน</h3>
             <form method="post">
                 <?= csrfField() ?>
                 <input type="hidden" name="action" value="password">
