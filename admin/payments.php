@@ -23,7 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_id'], $_POST[
         $stmt->execute([$status, $paymentId]);
         flash('admin_success', $status === 'verified' ? 'ยืนยันและเปิดสิทธิ์เรียนเรียบร้อย' : 'อัปเดตสถานะเรียบร้อย');
     }
-    redirect('/admin/payments.php');
+    $listPage = max(1, (int) ($_POST['list_page'] ?? 1));
+    $anchor = $paymentId > 0 ? '#payment-' . $paymentId : '';
+    redirect('/admin/payments.php?page=' . $listPage . $anchor);
 }
 
 $pageTitle = 'การชำระเงิน';
@@ -32,13 +34,24 @@ require_once dirname(__DIR__) . '/includes/booking.php';
 
 $message = flash('admin_success');
 
+$paymentsPerPage = 20;
+$paymentsPage = max(1, (int) ($_GET['page'] ?? 1));
+$paymentsTotal = 0;
+$paymentsPager = adminPagination(0, $paymentsPerPage, $paymentsPage);
+
 try {
-    $stmt = db()->query('
+    $paymentsTotal = (int) db()->query('SELECT COUNT(*) FROM payments')->fetchColumn();
+    $paymentsPager = adminPagination($paymentsTotal, $paymentsPerPage, $paymentsPage);
+    $stmt = db()->prepare('
         SELECT p.*, c.title AS course_title
         FROM payments p
         LEFT JOIN courses c ON c.id = p.course_id
         ORDER BY p.created_at DESC
+        LIMIT ? OFFSET ?
     ');
+    $stmt->bindValue(1, $paymentsPerPage, PDO::PARAM_INT);
+    $stmt->bindValue(2, $paymentsPager['offset'], PDO::PARAM_INT);
+    $stmt->execute();
     $payments = $stmt->fetchAll();
 } catch (Throwable $e) {
     $payments = [];
@@ -104,6 +117,12 @@ $statusLabels = [
 <div class="admin-card">
     <div class="admin-card-header">
         <h2>รายการแจ้งชำระเงิน</h2>
+        <?php if ($paymentsTotal > 0): ?>
+        <span class="admin-card-meta">
+            แสดง <?= (int) ($paymentsPager['offset'] + 1) ?>–<?= (int) min($paymentsPager['offset'] + $paymentsPerPage, $paymentsTotal) ?>
+            จาก <?= (int) $paymentsTotal ?> รายการ
+        </span>
+        <?php endif; ?>
     </div>
     <div class="admin-card-body is-flush">
         <?php if ($payments): ?>
@@ -115,6 +134,7 @@ $statusLabels = [
                     <th>ลูกค้า</th>
                     <th>คอร์ส</th>
                     <th class="col-amount">จำนวน</th>
+                    <th>สถานะ</th>
                     <th class="actions">จัดการ</th>
                 </tr>
             </thead>
@@ -128,8 +148,8 @@ $statusLabels = [
                     if ($sessionTime !== '') {
                         $courseLine .= ' (' . $sessionTime . ')';
                     }
-                    $customerLine = formatPaymentCustomerLine($p);
-                    $customerTitle = trim((string) ($p['student_email'] ?? ''));
+                    $customerUser = formatPaymentCustomerUser($p);
+                    $customerTitle = formatPaymentCustomerTitle($p);
                     $slipFilename = (string) ($p['slip_image'] ?? '');
                     $slipUrl = $slipFilename !== ''
                         ? APP_URL . '/public/view_slip.php?id=' . (int) $p['id']
@@ -140,10 +160,13 @@ $statusLabels = [
                 <tr id="payment-<?= (int) $p['id'] ?>" class="payments-table-row">
                     <td class="payment-date"><?= e(date('d/m/Y H:i', strtotime($p['created_at']))) ?></td>
                     <td class="payment-payer"<?= $customerTitle !== '' ? ' title="' . e($customerTitle) . '"' : '' ?>>
-                        <?= e($customerLine) ?>
+                        <?= e($customerUser) ?>
                     </td>
                     <td class="payment-courses" title="<?= e($courseLine) ?>"><?= e($courseLine) ?></td>
                     <td class="payment-amount"><?= e(formatPrice((float) $p['amount'])) ?></td>
+                    <td class="payment-status">
+                        <span class="badge badge-<?= e($paymentStatus) ?>"><?= e($statusLabels[$paymentStatus] ?? $paymentStatus) ?></span>
+                    </td>
                     <td class="actions payment-actions-cell">
                         <?php if ($slipUrl !== ''): ?>
                         <button
@@ -155,11 +178,11 @@ $statusLabels = [
                             data-slip-payer="<?= e($p['student_name']) ?>"
                         >สลิป</button>
                         <?php endif; ?>
-                        <span class="badge badge-<?= e($paymentStatus) ?>"><?= e($statusLabels[$paymentStatus] ?? $paymentStatus) ?></span>
                         <?php if ($paymentStatus === 'pending'): ?>
                         <form method="post" class="payment-action-form table-actions">
                             <?= csrfField() ?>
                             <input type="hidden" name="payment_id" value="<?= (int) $p['id'] ?>">
+                            <input type="hidden" name="list_page" value="<?= (int) $paymentsPager['page'] ?>">
                             <button type="submit" name="status" value="verified" class="btn btn-primary btn-sm">ยืนยัน</button>
                             <button type="submit" name="status" value="rejected" class="btn btn-danger btn-sm">ปฏิเสธ</button>
                         </form>
@@ -167,8 +190,11 @@ $statusLabels = [
                         <form method="post" class="payment-action-form table-actions">
                             <?= csrfField() ?>
                             <input type="hidden" name="payment_id" value="<?= (int) $p['id'] ?>">
+                            <input type="hidden" name="list_page" value="<?= (int) $paymentsPager['page'] ?>">
                             <button type="submit" name="status" value="verified" class="btn btn-primary btn-sm">ยืนยัน</button>
                         </form>
+                        <?php else: ?>
+                        <span class="payment-actions-muted">—</span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -176,6 +202,7 @@ $statusLabels = [
             </tbody>
         </table>
         </div>
+        <?php renderAdminPagination($paymentsPager, '/admin/payments.php'); ?>
         <?php else: ?>
         <p class="table-empty">ยังไม่มีรายการ</p>
         <?php endif; ?>

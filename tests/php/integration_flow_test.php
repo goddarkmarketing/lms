@@ -148,6 +148,28 @@ test_check('หลังยืนยัน: สถานะการชำระ
 $courseIds = getPaymentCourseIds($paymentId);
 test_check('payment_items บันทึกคอร์สได้', in_array($courseId, $courseIds, true), implode(',', $courseIds));
 
+$stalePaymentId = insertBankTransferPayment(
+    null,
+    $name,
+    $email,
+    $phone,
+    $amount,
+    date('Y-m-d'),
+    '16:00',
+    null,
+    "stale course test\ncart_ids:999998",
+    null
+);
+test_check('สร้าง payment อ้างคอร์สที่ไม่มีแล้วได้', $stalePaymentId > 0);
+$syncStaleOk = true;
+try {
+    syncEnrollmentsFromPaymentsForStudent($studentId);
+} catch (Throwable $e) {
+    $syncStaleOk = false;
+}
+test_check('sync ข้ามคอร์สที่ถูกลบแล้ว', $syncStaleOk);
+test_check('filterValidCourseIds ตัด id ปลอม', filterValidCourseIds([$courseId, 999998]) === [$courseId]);
+
 // --- ผู้เรียน: อัปเดตโปรไฟล์ ---
 $profileResult = updateStudentProfile($studentId, "{$name} Updated", $email, null);
 test_check('แก้ไขโปรไฟล์ได้', $profileResult['ok'], $profileResult['message'] ?? '');

@@ -122,12 +122,42 @@
     color: var(--color-text-heading);
   }
 
+  .payments-table--compact .payment-status {
+    @apply whitespace-nowrap;
+  }
+
   .payments-table--compact .payment-actions-cell {
     @apply whitespace-nowrap text-right;
   }
 
   .payments-table--compact .payment-actions-cell .badge {
     @apply mx-1 align-middle;
+  }
+
+  .payment-actions-muted {
+    @apply text-sm;
+    color: var(--color-text-muted);
+  }
+
+  .admin-card-meta {
+    @apply text-sm;
+    color: var(--color-text-muted);
+  }
+
+  .admin-pagination {
+    @apply flex flex-wrap items-center justify-center gap-1 border-t border-gray-100 px-4 py-4;
+  }
+
+  .admin-pagination-link {
+    @apply inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2.5 text-sm font-medium text-gray-700 no-underline transition;
+  }
+
+  .admin-pagination-link:hover {
+    @apply border-gray-300 bg-gray-50 text-gray-900;
+  }
+
+  .admin-pagination-link.is-active {
+    @apply border-red-600 bg-red-600 text-white;
   }
 
   .payment-slip-btn {

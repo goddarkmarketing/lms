@@ -62,7 +62,15 @@ $studentId = (int) $student['id'];
 $studentInitial = studentAccountInitial($student['full_name'] ?? '');
 
 try {
-    syncEnrollmentsFromPaymentsForStudent($studentId);
+    try {
+        syncEnrollmentsFromPaymentsForStudent($studentId);
+    } catch (Throwable $syncError) {
+        $logDir = dirname(__DIR__) . '/storage/logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
+        }
+        file_put_contents($logDir . '/profile.log', date('Y-m-d H:i:s') . ' sync ' . $syncError->getMessage() . "\n", FILE_APPEND);
+    }
     $enrolled = getEnrolledCoursesByStudentId($studentId);
     $courseIds = array_map(static fn($c) => (int) $c['id'], $enrolled);
     $progressMap = getCourseProgressForStudent($studentId, $courseIds);

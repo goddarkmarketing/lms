@@ -602,3 +602,51 @@ function levelBadge(string $level): string
         default => 'ทุกระดับ',
     };
 }
+
+function adminPagination(int $totalItems, int $perPage, int $page): array
+{
+    $perPage = max(1, $perPage);
+    $totalPages = max(1, (int) ceil($totalItems / $perPage));
+    $page = min(max(1, $page), $totalPages);
+
+    return [
+        'total' => max(0, $totalItems),
+        'per_page' => $perPage,
+        'page' => $page,
+        'total_pages' => $totalPages,
+        'offset' => ($page - 1) * $perPage,
+    ];
+}
+
+function renderAdminPagination(array $pager, string $basePath, array $query = []): void
+{
+    if (($pager['total_pages'] ?? 1) <= 1) {
+        return;
+    }
+
+    $current = (int) ($pager['page'] ?? 1);
+    $totalPages = (int) ($pager['total_pages'] ?? 1);
+    $buildUrl = static function (int $page) use ($basePath, $query): string {
+        $params = array_merge($query, ['page' => $page]);
+        $qs = http_build_query($params);
+
+        return APP_URL . $basePath . ($qs !== '' ? '?' . $qs : '');
+    };
+    ?>
+    <nav class="admin-pagination" aria-label="เปลี่ยนหน้า">
+        <?php if ($current > 1): ?>
+        <a href="<?= e($buildUrl($current - 1)) ?>" class="admin-pagination-link" aria-label="หน้าก่อนหน้า">‹</a>
+        <?php endif; ?>
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <a
+            href="<?= e($buildUrl($i)) ?>"
+            class="admin-pagination-link<?= $i === $current ? ' is-active' : '' ?>"
+            <?= $i === $current ? 'aria-current="page"' : '' ?>
+        ><?= $i ?></a>
+        <?php endfor; ?>
+        <?php if ($current < $totalPages): ?>
+        <a href="<?= e($buildUrl($current + 1)) ?>" class="admin-pagination-link" aria-label="หน้าถัดไป">›</a>
+        <?php endif; ?>
+    </nav>
+    <?php
+}

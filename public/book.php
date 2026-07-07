@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             addToCartCourse((int) $course['id']);
             setCartSessionForCourse((int) $course['id'], $sessionId);
-            flash('payment_success', 'เลือกรอบเรียนแล้ว — ดำเนินการชำระเงินในขั้นตอนถัดไป');
+            flash('cart_success', 'เลือกรอบเรียนแล้ว — ดำเนินการชำระเงินในขั้นตอนถัดไป');
             redirect('/public/cart.php');
         }
     }

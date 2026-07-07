@@ -254,6 +254,31 @@ function formatPaymentCustomerLine(array $payment): string
     return $name !== '' ? $name : $phone;
 }
 
+/** ชื่อผู้ใช้สำหรับแสดงในตารางแอดมิน — อีเมลหรือเบอร์โทร */
+function formatPaymentCustomerUser(array $payment): string
+{
+    $email = trim((string) ($payment['student_email'] ?? ''));
+    if ($email !== '') {
+        return $email;
+    }
+    $phone = trim((string) ($payment['student_phone'] ?? ''));
+    if ($phone !== '') {
+        return $phone;
+    }
+    $name = trim((string) ($payment['student_name'] ?? ''));
+    return $name !== '' ? $name : '-';
+}
+
+function formatPaymentCustomerTitle(array $payment): string
+{
+    $parts = array_filter([
+        trim((string) ($payment['student_name'] ?? '')),
+        trim((string) ($payment['student_phone'] ?? '')),
+        trim((string) ($payment['student_email'] ?? '')),
+    ]);
+    return implode(' · ', $parts);
+}
+
 function formatPaymentCourseLine(array $payment, array $items = []): string
 {
     $titles = [];
@@ -323,7 +348,23 @@ function resolveCheckoutStudentId(string $name, ?string $email, string $phone): 
 
 function getCourseIdsFromCartItems(array $items): array
 {
-    return array_values(array_filter(array_map(static fn ($item) => (int) ($item['id'] ?? 0), $items)));
+    return filterValidCourseIds(array_values(array_filter(array_map(static fn ($item) => (int) ($item['id'] ?? 0), $items))));
+}
+
+function filterValidCourseIds(array $courseIds): array
+{
+    $courseIds = array_values(array_unique(array_filter(array_map('intval', $courseIds))));
+    if (!$courseIds) {
+        return [];
+    }
+    try {
+        $placeholders = implode(',', array_fill(0, count($courseIds), '?'));
+        $stmt = db()->prepare("SELECT id FROM courses WHERE id IN ($placeholders)");
+        $stmt->execute($courseIds);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    } catch (Throwable $e) {
+        return [];
+    }
 }
 
 function enrollmentStatusRank(string $status): int
@@ -369,6 +410,10 @@ function syncEnrollmentsFromPaymentsForStudent(int $studentId): void
         if (!$courseIds) {
             continue;
         }
+        $courseIds = filterValidCourseIds($courseIds);
+        if (!$courseIds) {
+            continue;
+        }
 
         $paymentActive = ($payment['status'] ?? '') === 'verified';
         foreach ($courseIds as $courseId) {
@@ -411,6 +456,11 @@ function enrollStudentInCourses(int $studentId, array $courseIds, string $status
     $allowed = ['pending', 'active', 'completed', 'cancelled'];
     if (!in_array($status, $allowed, true)) {
         $status = 'active';
+    }
+
+    $courseIds = filterValidCourseIds($courseIds);
+    if (!$courseIds) {
+        return;
     }
 
     $check = db()->prepare('SELECT id, status FROM enrollments WHERE student_id = ? AND course_id = ? LIMIT 1');
@@ -553,6 +603,10 @@ function enrollFromPayment(array $payment): void
     if (!$courseIds && !empty($payment['course_id'])) {
         $courseIds = [(int) $payment['course_id']];
     }
+    if (!$courseIds) {
+        return;
+    }
+    $courseIds = filterValidCourseIds($courseIds);
     if (!$courseIds) {
         return;
     }
