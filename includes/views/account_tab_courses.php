@@ -61,30 +61,36 @@ if (!function_exists('isLiveCourse')) {
         <div class="my-courses-item-body">
             <div class="my-courses-item-head">
                 <h2><?= e($course['title']) ?></h2>
-                <?php if (!$isPending): ?>
+                <?php if ($isPending): ?>
+                <span class="my-courses-badge my-courses-badge--pending">รอตรวจสอบ</span>
+                <?php elseif (!$isLiveCourseItem): ?>
                 <span class="my-courses-badge my-courses-badge--active">เปิดสิทธิ์แล้ว</span>
                 <?php endif; ?>
             </div>
-            <?php if (!empty($course['subtitle'])): ?>
+            <?php if (!empty($course['subtitle']) && !$isLiveCourseItem && !$isPending): ?>
             <p class="my-courses-item-sub"><?= e($course['subtitle']) ?></p>
             <?php endif; ?>
             <?php if ($isPending): ?>
-            <div class="my-courses-pending-box">
-                <?= lucide_icon('clock', ['size' => 18]) ?>
-                <p>ได้รับการแจ้งชำระเงินแล้ว ทีมงานจะตรวจสอบและเปิดสิทธิ์เรียนภายใน 24 ชั่วโมง</p>
-                <?php if ($isLiveCourseItem && $courseBooking): ?>
-                <p class="my-courses-live-booking-note">รอบจอง: <?= e(formatSessionRange($courseBooking)) ?> — จะยืนยันเมื่ออนุมัติชำระเงิน</p>
-                <?php endif; ?>
-            </div>
+            <p class="my-courses-item-meta my-courses-item-meta--pending">
+                <?= lucide_icon('clock', ['size' => 14]) ?>
+                <span>รอตรวจสอบการชำระเงิน<?php if ($isLiveCourseItem && $courseBooking): ?> · <?= e(formatSessionRange($courseBooking)) ?><?php endif; ?></span>
+            </p>
             <?php elseif ($isLiveCourseItem): ?>
-            <div class="my-courses-live-box">
+            <p class="my-courses-item-meta">
+                <span class="my-courses-meta-live">Live</span>
                 <?php if ($courseBooking): ?>
-                <p><strong>การจอง Live:</strong> <?= e(formatSessionRange($courseBooking)) ?> · <?= e(bookingStatusLabel($courseBooking['status'] ?? '')) ?></p>
-                <a href="<?= APP_URL ?>/public/profile.php?tab=bookings" class="my-courses-quiz-link">ดูการจอง / Zoom</a>
-                <?php else: ?>
-                <p>คอร์ส Live — <a href="<?= APP_URL ?>/public/book.php?course=<?= e(urlencode($course['slug'])) ?>">จองรอบเรียน</a></p>
+                · <?= e(formatSessionRange($courseBooking)) ?>
+                <?php
+                    $bookingStatus = (string) ($courseBooking['status'] ?? '');
+                    if ($bookingStatus !== '' && $bookingStatus !== 'confirmed'):
+                ?>
+                · <?= e(bookingStatusLabel($bookingStatus)) ?>
                 <?php endif; ?>
-            </div>
+                · <a href="<?= APP_URL ?>/public/profile.php?tab=bookings" class="my-courses-quiz-link">ดูการจอง / Zoom</a>
+                <?php else: ?>
+                · <a href="<?= APP_URL ?>/public/book.php?course=<?= e(urlencode($course['slug'])) ?>" class="my-courses-quiz-link">จองรอบเรียน</a>
+                <?php endif; ?>
+            </p>
             <?php else: ?>
             <div class="course-progress-bar-wrap course-progress-bar-wrap--compact">
                 <div class="course-progress-label">
@@ -114,10 +120,8 @@ if (!function_exists('isLiveCourse')) {
             <?php endif; ?>
             <?php endif; ?>
         </div>
+        <?php if (!$isPending): ?>
         <div class="my-courses-item-actions">
-            <?php if ($isPending): ?>
-            <span class="my-courses-badge my-courses-badge--pending my-courses-badge--action">รอตรวจสอบ</span>
-            <?php else: ?>
             <a href="<?= e($startUrl) ?>" class="btn btn-primary btn-sm"><?= $prog['percent'] >= 100 ? 'ทบทวน' : 'เริ่มเรียน' ?></a>
             <?php if ($cert): ?>
             <a href="<?= APP_URL ?>/public/certificate.php?code=<?= urlencode($cert['certificate_code']) ?>" class="btn btn-outline btn-sm" target="_blank">ใบประกาศ</a>
@@ -126,8 +130,8 @@ if (!function_exists('isLiveCourse')) {
             <?php elseif ($prog['percent'] >= 100 && certificateRequiresQuiz() && $quizzes): ?>
             <span class="my-courses-status-btn" title="ต้องผ่านแบบทดสอบก่อน">รอผ่านแบบทดสอบ</span>
             <?php endif; ?>
-            <?php endif; ?>
         </div>
+        <?php endif; ?>
     </li>
     <?php endforeach; ?>
 </ul>

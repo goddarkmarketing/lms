@@ -1774,10 +1774,10 @@ a:hover { color: var(--red-dark); }
 
 .my-courses-item {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) auto;
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1.25rem;
-  padding: 1.15rem 1.35rem;
+  gap: 1rem;
+  padding: .85rem 1rem;
   background: var(--white);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
@@ -1785,10 +1785,10 @@ a:hover { color: var(--red-dark); }
 }
 
 .my-courses-item-cover {
-  width: 100%;
+  width: 7.5rem;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--gray-100);
   border: 1px solid var(--gray-200);
   line-height: 0;
@@ -1808,25 +1808,63 @@ a:hover { color: var(--red-dark); }
 
 .my-courses-item-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: .75rem;
-  margin-bottom: .35rem;
+  gap: .65rem;
+  margin-bottom: .15rem;
 }
 
 .my-courses-item-head h2 {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   margin: 0;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .my-courses-item-sub {
-  margin: 0 0 .75rem;
-  font-size: .88rem;
+  margin: 0 0 .35rem;
+  font-size: .84rem;
   color: var(--gray-600);
-  line-height: 1.45;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.my-courses-item-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .2rem .35rem;
+  margin: 0;
+  font-size: .82rem;
+  color: var(--gray-600);
+  line-height: 1.35;
+}
+
+.my-courses-item-meta--pending {
+  color: #b45309;
+}
+
+.my-courses-item-meta--pending svg {
+  flex-shrink: 0;
+}
+
+.my-courses-meta-live {
+  display: inline-block;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  padding: .12rem .45rem;
+  border-radius: 999px;
+  background: rgba(6, 199, 85, .12);
+  color: #047857;
 }
 
 .my-courses-badge {
@@ -1898,10 +1936,12 @@ a:hover { color: var(--red-dark); }
 
 .my-courses-item-actions {
   display: flex;
-  flex-direction: column;
-  gap: .5rem;
-  align-items: stretch;
-  min-width: 7.5rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: .45rem;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 6.5rem;
 }
 
 .my-courses-status-btn {
@@ -1926,8 +1966,15 @@ a:hover { color: var(--red-dark); }
 }
 
 .my-courses-item .course-progress-bar-wrap--compact {
-  margin-top: 0;
+  margin-top: .15rem;
   max-width: 28rem;
+}
+
+.my-courses-item .my-courses-quizzes {
+  margin-top: .35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 @media (max-width: 960px) {
   .cart-page-layout:not(.cart-page-layout--empty) {
@@ -1947,25 +1994,38 @@ a:hover { color: var(--red-dark); }
     justify-content: center;
   }
   .my-courses-item {
-    grid-template-columns: minmax(160px, 42%) minmax(0, 1fr);
+    grid-template-columns: 6.5rem minmax(0, 1fr);
     grid-template-rows: auto auto;
-    gap: .85rem 1rem;
-    padding: 1rem;
+    gap: .65rem .85rem;
+    padding: .75rem;
+  }
+  .my-courses-item:not(:has(.my-courses-item-actions)) {
+    grid-template-rows: auto;
   }
   .my-courses-item-cover {
     grid-row: span 2;
-    align-self: start;
+    align-self: center;
+    width: 6.5rem;
+  }
+  .my-courses-item:not(:has(.my-courses-item-actions)) .my-courses-item-cover {
+    grid-row: span 1;
   }
   .my-courses-item-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: .4rem;
+    flex-wrap: wrap;
+  }
+  .my-courses-item-head h2 {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .my-courses-item-meta {
+    font-size: .8rem;
   }
   .my-courses-item-actions {
     grid-column: 2;
-    flex-direction: row;
-    flex-wrap: wrap;
     min-width: 0;
+    justify-content: flex-start;
   }
   .my-courses-item-actions .btn,
   .my-courses-item-actions .my-courses-status-btn {
