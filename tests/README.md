@@ -21,6 +21,24 @@ npx playwright install chromium
 npm test
 ```
 
+เทสต์ flow ผู้เรียน + ผู้ดูแล (E2E เบราว์เซอร์):
+
+```bash
+npm run test:e2e
+```
+
+เทสต์ backend แบบ PHP (ไม่ใช้เบราว์เซอร์):
+
+```bash
+npm run test:php
+```
+
+รันทั้ง PHP + E2E:
+
+```bash
+npm run test:flow
+```
+
 รันแบบมี UI:
 
 ```bash
@@ -45,6 +63,9 @@ npm run test:report
 
 | ไฟล์ | ตรวจสอบ |
 |------|---------|
+| `php/integration_flow_test.php` | สมัคร → แจ้งโอน → admin ยืนยัน → เปิดสิทธิ์ (CLI) |
+| `e2e/student-admin-flow.spec.js` | flow ผู้เรียน + ผู้ดูแลครบวงจรในเบราว์เซอร์ |
+| `e2e/admin-operations.spec.js` | หน้า admin ชำระเงิน / นักเรียน / จองคลาส / LINE |
 | `ui/button-consistency.spec.js` | ความสูงปุ่มใน toolbar / filter bar / card header |
 | `ui/layout-spacing.spec.js` | gap ของ grid และ flex บนแดชบอร์ดและหน้าคอร์ส |
 | `ui/functionality.spec.js` | ติดต่อเรา, กรอง, ตัวกรองบทเรียน, modal คูปอง, โหลดหน้า admin |
