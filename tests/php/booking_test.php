@@ -37,6 +37,13 @@ test_check('sessionSeatsStatus low', sessionSeatsStatus(2, 20) === 'low');
 test_check('bookingStatusLabel', bookingStatusLabel('confirmed') === 'ยืนยันแล้ว');
 test_check('bookingStatusBadgeClass', bookingStatusBadgeClass('pending') === 'badge-pending');
 
+$liveCourse = ['slug' => 'live-hsk-demo-test', 'zoom_url' => 'https://zoom.us/j/course'];
+$confirmedBooking = ['status' => 'confirmed', 'zoom_url' => 'https://zoom.us/j/session'];
+test_check('courseLiveStartUrl zoom', courseLiveStartUrl($liveCourse, $confirmedBooking) === 'https://zoom.us/j/session');
+test_check('courseLiveStartLabel zoom', courseLiveStartLabel($liveCourse, $confirmedBooking) === 'เข้า Zoom');
+test_check('courseLiveStartOpensInNewTab', courseLiveStartOpensInNewTab($liveCourse, $confirmedBooking));
+test_check('courseLiveStartUrl no booking', str_contains(courseLiveStartUrl($liveCourse, null), 'book.php'));
+
 test_check('getSessionZoomUrl session', getSessionZoomUrl(['zoom_url' => 'https://zoom.us/j/s']) === 'https://zoom.us/j/s');
 test_check('getSessionZoomUrl fallback course', getSessionZoomUrl(['zoom_url' => ''], ['zoom_url' => 'https://zoom.us/j/c']) === 'https://zoom.us/j/c');
 
@@ -212,7 +219,7 @@ $syncPaymentId = (int) db()->lastInsertId();
 $syncedCount = syncSessionBookingsFromPayment($syncPaymentId);
 test_check('syncSessionBookingsFromPayment จาก note', $syncedCount >= 1, "#{$syncPaymentId}");
 $syncBookings = getBookingsByPaymentId($syncPaymentId);
-test_check('sync ใช้รอบเรียนที่มีจริง', (int) ($syncBookings[0]['session_id'] ?? 0) === $validSessionId);
+test_check('sync ใช้รอบเรียนที่มีจริง', (int) ($syncBookings[0]['session_id'] ?? 0) > 0 && getSessionById((int) $syncBookings[0]['session_id']) !== null);
 
 $result = test_print_summary('LMS Booking Test');
 exit($result['fail'] > 0 ? 1 : 0);

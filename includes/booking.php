@@ -25,6 +25,50 @@ function getCourseZoomUrl(array $course): ?string
     return $url !== '' ? $url : null;
 }
 
+function courseLiveStartUrl(array $course, ?array $booking = null): string
+{
+    if ($booking && ($booking['status'] ?? '') === 'confirmed') {
+        $zoom = getSessionZoomUrl($booking, $course);
+        if ($zoom) {
+            return $zoom;
+        }
+    }
+
+    if ($booking) {
+        return APP_URL . '/public/profile.php?tab=bookings';
+    }
+
+    return APP_URL . '/public/book.php?course=' . urlencode((string) ($course['slug'] ?? ''));
+}
+
+function courseLiveStartLabel(array $course, ?array $booking = null): string
+{
+    if ($booking && ($booking['status'] ?? '') === 'confirmed') {
+        if (getSessionZoomUrl($booking, $course)) {
+            return 'เข้า Zoom';
+        }
+
+        return 'ดูการจอง';
+    }
+
+    if ($booking) {
+        return 'ดูการจอง';
+    }
+
+    return 'จองรอบเรียน';
+}
+
+function courseLiveStartOpensInNewTab(array $course, ?array $booking = null): bool
+{
+    if (!$booking || ($booking['status'] ?? '') !== 'confirmed') {
+        return false;
+    }
+
+    $url = courseLiveStartUrl($course, $booking);
+
+    return str_starts_with($url, 'http://') || str_starts_with($url, 'https://');
+}
+
 function getSessionZoomUrl(array $session, ?array $course = null): ?string
 {
     $sessionUrl = trim((string) ($session['zoom_url'] ?? $session['session_zoom_url'] ?? ''));

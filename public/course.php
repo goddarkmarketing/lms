@@ -42,8 +42,13 @@ $faqItems = courseFaqItems();
 $hasLessons = count($lessons) > 0;
 
 $student = currentStudent();
+$studentId = $student ? (int) $student['id'] : 0;
+$hasCourseAccess = $studentId > 0 && studentHasCourseAccess($studentId, (int) $course['id']);
+$liveBooking = ($hasCourseAccess && isLiveCourse($course))
+    ? getStudentBookingForCourse($studentId, (int) $course['id'])
+    : null;
 $courseGames = [];
-if ($student && studentHasCourseAccess((int) $student['id'], (int) $course['id'])) {
+if ($hasCourseAccess) {
     $courseGames = getGamesByCourse((int) $course['id']);
 }
 
@@ -273,12 +278,28 @@ require_once dirname(__DIR__) . '/includes/header.php';
             <div class="course-sidebar-price"><?= e(formatPrice((float) ($course['price'] ?? 0))) ?></div>
 
             <div class="course-sidebar-actions">
-                <?php if ($hasLessons): ?>
+                <?php if ($hasCourseAccess && isLiveCourse($course)): ?>
+                    <?php
+                        $liveStartUrl = courseLiveStartUrl($course, $liveBooking);
+                        $liveStartLabel = courseLiveStartLabel($course, $liveBooking);
+                        $liveStartNewTab = courseLiveStartOpensInNewTab($course, $liveBooking);
+                    ?>
+                    <a href="<?= e($liveStartUrl) ?>" class="btn btn-gold btn-block btn-sm"<?= $liveStartNewTab ? ' target="_blank" rel="noopener"' : '' ?>><?= e($liveStartLabel) ?></a>
+                    <a href="<?= APP_URL ?>/public/profile.php?tab=bookings" class="btn btn-outline btn-block btn-sm">ดูการจองของฉัน</a>
+                <?php elseif ($hasCourseAccess && $hasLessons): ?>
                     <a href="<?= e($startUrl) ?>" class="btn btn-gold btn-block btn-sm">เริ่มเรียนบทแรก</a>
+                <?php else: ?>
+                    <?php if ($hasLessons): ?>
+                    <a href="<?= e($startUrl) ?>" class="btn btn-gold btn-block btn-sm">เริ่มเรียนบทแรก</a>
+                    <?php endif; ?>
+                    <?php if (isLiveCourse($course)): ?>
+                    <a href="<?= APP_URL ?>/public/book.php?course=<?= e(urlencode($course['slug'])) ?>" class="btn btn-primary btn-block btn-sm"><?= e(courseBookOrBuyLabel($course)) ?></a>
+                    <?php else: ?>
+                    <a href="<?= e(courseBuyUrl($course)) ?>" class="btn btn-primary btn-block btn-sm">ซื้อคอร์สนี้</a>
+                    <a href="<?= e(courseEnrollUrl($course)) ?>" class="btn btn-outline btn-block btn-sm js-cart-add">เพิ่มลงตะกร้า</a>
+                    <?php endif; ?>
+                    <a href="<?= APP_URL ?>/public/contact.php" class="btn btn-outline btn-block btn-sm">ติดต่อสอบถาม</a>
                 <?php endif; ?>
-                <a href="<?= e(courseBuyUrl($course)) ?>" class="btn btn-primary btn-block btn-sm">ซื้อคอร์สนี้</a>
-                <a href="<?= e(courseEnrollUrl($course)) ?>" class="btn btn-outline btn-block btn-sm js-cart-add">เพิ่มลงตะกร้า</a>
-                <a href="<?= APP_URL ?>/public/contact.php" class="btn btn-outline btn-block btn-sm">ติดต่อสอบถาม</a>
             </div>
 
             <p class="course-sidebar-note"><?= e(getSetting('payment_note')) ?></p>

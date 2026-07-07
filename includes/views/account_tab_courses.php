@@ -36,14 +36,22 @@ if (!function_exists('isLiveCourse')) {
             ? ['percent' => 0, 'done' => 0, 'total' => 0]
             : ($progressMap[$cid] ?? ['percent' => 0, 'done' => 0, 'total' => 0]);
         $lessonId = getFirstLessonIdForCourse($cid);
-        $startUrl = $lessonId
-            ? APP_URL . '/public/lesson.php?lesson_id=' . $lessonId
-            : APP_URL . '/public/course.php?slug=' . urlencode($course['slug']);
+        $courseBooking = $bookingsByCourse[$cid] ?? null;
+        $isLiveCourseItem = isLiveCourse($course);
+        if ($isLiveCourseItem && !$isPending) {
+            $startUrl = courseLiveStartUrl($course, $courseBooking);
+            $startLabel = courseLiveStartLabel($course, $courseBooking);
+            $startNewTab = courseLiveStartOpensInNewTab($course, $courseBooking);
+        } else {
+            $startUrl = $lessonId
+                ? APP_URL . '/public/lesson.php?lesson_id=' . $lessonId
+                : APP_URL . '/public/course.php?slug=' . urlencode($course['slug']);
+            $startLabel = $prog['percent'] >= 100 ? 'ทบทวน' : 'เริ่มเรียน';
+            $startNewTab = false;
+        }
         $quizzes = $isPending ? [] : getQuizzesByCourse($cid);
         $games = $isPending ? [] : getGamesByCourse($cid);
         $cert = $certByCourse[$cid] ?? null;
-        $courseBooking = $bookingsByCourse[$cid] ?? null;
-        $isLiveCourseItem = isLiveCourse($course);
         if (!$isPending && $prog['percent'] >= 100) {
             maybeMarkEnrollmentCompleted($studentId, $cid);
         }
@@ -122,7 +130,7 @@ if (!function_exists('isLiveCourse')) {
         </div>
         <?php if (!$isPending): ?>
         <div class="my-courses-item-actions">
-            <a href="<?= e($startUrl) ?>" class="btn btn-primary btn-sm"><?= $prog['percent'] >= 100 ? 'ทบทวน' : 'เริ่มเรียน' ?></a>
+            <a href="<?= e($startUrl) ?>" class="btn btn-primary btn-sm"<?= !empty($startNewTab) ? ' target="_blank" rel="noopener"' : '' ?>><?= e($startLabel) ?></a>
             <?php if ($cert): ?>
             <a href="<?= APP_URL ?>/public/certificate.php?code=<?= urlencode($cert['certificate_code']) ?>" class="btn btn-outline btn-sm" target="_blank">ใบประกาศ</a>
             <?php elseif ($prog['percent'] >= 100 && (!certificateRequiresQuiz() || studentPassedAllCourseQuizzes($studentId, $cid))): ?>
