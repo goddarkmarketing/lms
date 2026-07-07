@@ -358,17 +358,11 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
             <div class="form-row">
                 <div class="form-group">
                     <label class="admin-settings-label-with-icon"><?= lucide_icon('shield', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Secret</label>
-                    <input type="password" name="line_oa_channel_secret" class="form-control" placeholder="<?= lineOaHasChannelSecret() ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Basic settings' ?>" autocomplete="new-password">
-                    <?php if (lineOaHasChannelSecret()): ?>
-                    <small class="form-hint admin-line-credential-saved">บันทึกแล้ว — ช่องนี้จะว่างเพื่อความปลอดภัย ว่างไว้เพื่อคงค่าเดิม</small>
-                    <?php endif; ?>
+                    <input type="password" name="line_oa_channel_secret" class="form-control" value="<?= e($settings['line_oa_channel_secret'] ?? '') ?>" placeholder="จาก LINE Developers → Basic settings" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label class="admin-settings-label-with-icon"><?= lucide_icon('lock', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Access Token</label>
-                    <input type="password" name="line_oa_channel_token" class="form-control" placeholder="<?= lineOaHasChannelToken() ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Messaging API' ?>" autocomplete="new-password">
-                    <?php if (lineOaHasChannelToken()): ?>
-                    <small class="form-hint admin-line-credential-saved">บันทึกแล้ว — ช่องนี้จะว่างเพื่อความปลอดภัย ว่างไว้เพื่อคงค่าเดิม</small>
-                    <?php endif; ?>
+                    <input type="password" name="line_oa_channel_token" class="form-control" value="<?= e($settings['line_oa_channel_token'] ?? '') ?>" placeholder="จาก LINE Developers → Messaging API" autocomplete="off">
                 </div>
             </div>
             <div class="form-group">
@@ -382,16 +376,6 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
                 <a href="<?= e(lineOaAddFriendUrl()) ?>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">เปิดหน้าเพิ่มเพื่อน</a>
                 <?php endif; ?>
             </div>
-            <?php if (lineOaHasChannelSecret() || lineOaHasChannelToken()): ?>
-            <ul class="admin-line-credential-status">
-                <li class="<?= lineOaHasChannelSecret() ? 'is-saved' : 'is-missing' ?>">
-                    Channel Secret: <?= lineOaHasChannelSecret() ? 'บันทึกแล้ว' : 'ยังไม่ได้ตั้ง' ?>
-                </li>
-                <li class="<?= lineOaHasChannelToken() ? 'is-saved' : 'is-missing' ?>">
-                    Access Token: <?= lineOaHasChannelToken() ? 'บันทึกแล้ว' : 'ยังไม่ได้ตั้ง' ?>
-                </li>
-            </ul>
-            <?php endif; ?>
             <?php if (isLineOaWebhookReady()): ?>
             <?php
                 $secretLen = strlen(lineOaChannelSecret());
