@@ -27,6 +27,14 @@ function lineOaChannelToken(): string
 
 function lineOaPublicBaseUrl(): string
 {
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        require_once __DIR__ . '/app_url.php';
+        $detected = detectAppUrlFromRequest();
+        if (str_contains($detected, '://') && !lineOaRequestIsLocal()) {
+            return rtrim($detected, '/');
+        }
+    }
+
     $siteUrl = trim(getSetting('site_url', ''));
     if ($siteUrl !== '' && str_contains($siteUrl, '://')) {
         return rtrim($siteUrl, '/');
@@ -48,6 +56,29 @@ function lineOaPublicBaseUrl(): string
     return 'http://localhost' . ($appUrl === '' || $appUrl === '/' ? '' : $appUrl);
 }
 
+function lineOaRequestIsLocal(): bool
+{
+    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if ($host === '') {
+        return false;
+    }
+
+    return str_contains($host, 'localhost')
+        || str_contains($host, '127.0.0.1')
+        || str_contains($host, '.local')
+        || str_contains($host, 'ngrok');
+}
+
+function lineOaSiteUrlIsStaleLocalhost(): bool
+{
+    $siteUrl = strtolower(trim(getSetting('site_url', '')));
+    if ($siteUrl === '') {
+        return false;
+    }
+
+    return str_contains($siteUrl, 'localhost') || str_contains($siteUrl, '127.0.0.1');
+}
+
 function lineOaWebhookUrl(): string
 {
     return lineOaPublicBaseUrl() . '/public/line_webhook.php';
@@ -55,6 +86,10 @@ function lineOaWebhookUrl(): string
 
 function lineOaIsLocalDev(): bool
 {
+    if (lineOaRequestIsLocal()) {
+        return true;
+    }
+
     $base = strtolower(lineOaPublicBaseUrl());
     return str_contains($base, 'localhost')
         || str_contains($base, '127.0.0.1')

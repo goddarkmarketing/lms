@@ -329,15 +329,13 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
                     คัดลอก URL นี้ไปตั้งใน <a href="https://developers.line.biz/console/" target="_blank" rel="noopener">LINE Developers Console</a>
                     → Messaging API → Webhook settings → เปิด Use webhook แล้วกด Verify
                 </p>
+                <?php if (!$lineIsLocalDev && lineOaSiteUrlIsStaleLocalhost()): ?>
+                <p class="form-hint admin-line-siteurl-hint">
+                    แนะนำ: เปลี่ยน「URL เว็บไซต์」ด้านบนเป็น <code><?= e($lineSiteBase) ?></code> แล้วบันทึก เพื่อให้ลิงก์ในอีเมลและ LINE ถูกต้องทุกครั้ง
+                </p>
+                <?php endif; ?>
             </div>
 
-            <?php if ($lineIsLocalDev): ?>
-            <div class="alert alert-warning" style="margin:1rem 0;font-size:.88rem">
-                <strong>ทดสอบบนเครื่องตัวเอง:</strong> LINE ไม่เรียก <code>localhost</code> ได้โดยตรง
-                — รัน <code>ngrok http 80</code> แล้วตั้ง Webhook เป็น URL ของ ngrok
-                หรือเปลี่ยน「URL เว็บไซต์」ด้านบนเป็น URL ชั่วคราวของ ngrok
-            </div>
-            <?php else: ?>
             <ol class="admin-line-setup-steps">
                 <li>ใส่ <strong>Channel Secret</strong> และ <strong>Channel Access Token</strong> จาก LINE Developers</li>
                 <li>ตั้ง Webhook เป็น <code><?= e($lineWebhookUrl) ?></code> แล้วกด Verify ให้ผ่าน</li>
@@ -345,13 +343,13 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
                 <li>ไปที่ <a href="https://manager.line.biz/" target="_blank" rel="noopener">LINE Official Account Manager</a>
                     → การตอบกลับ → เลือก <strong>Webhook</strong> และปิด Auto-reply / Greeting</li>
             </ol>
-            <?php endif; ?>
 
-            <div class="alert alert-warning" style="margin-bottom:1rem;font-size:.88rem">
-                <strong>ส่งเบอร์แล้วไม่มีการตอบกลับ?</strong>
-                ตรวจสอบว่า Webhook เปิดใช้งาน, Channel Secret ถูกต้อง (ปกติ ~32 ตัว)
-                และโหมดการตอบกลับเป็น Webhook ไม่ใช่ Chat
-            </div>
+            <?php if ($lineIsLocalDev): ?>
+            <p class="form-hint admin-line-dev-hint">
+                ทดสอบบนเครื่องตัวเอง: ใช้ <code>ngrok http 80</code> แล้วตั้ง Webhook เป็น URL ของ ngrok
+                หรือเปลี่ยน「URL เว็บไซต์」ด้านบนเป็น URL ชั่วคราวของ ngrok
+            </p>
+            <?php endif; ?>
 
             <div class="form-group">
                 <label><input type="checkbox" name="line_oa_enabled" value="1" <?= ($settings['line_oa_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> เปิดส่งแจ้งเตือนผ่าน LINE OA</label>
