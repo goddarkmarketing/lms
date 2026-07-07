@@ -62,7 +62,7 @@ $statusLabels = [
 <?php if (!empty($paymentsLoadError)): ?><div class="alert alert-error"><?= e($paymentsLoadError) ?></div><?php endif; ?>
 
 <?php if ($pendingEnrollments): ?>
-<div class="admin-card" style="margin-bottom:1rem">
+<div class="admin-card admin-card--spaced">
     <div class="admin-card-header">
         <h2>นักเรียนรอเปิดสิทธิ์ (<?= count($pendingEnrollments) ?>)</h2>
     </div>
@@ -112,7 +112,6 @@ $statusLabels = [
                 <tr>
                     <th>วันที่</th>
                     <th>ลูกค้า</th>
-                    <th>โทร</th>
                     <th>คอร์ส</th>
                     <th>รอบเรียน Live</th>
                     <th class="col-amount">จำนวน</th>
@@ -135,22 +134,28 @@ $statusLabels = [
                     $slipExt = strtolower(pathinfo(basename($slipFilename), PATHINFO_EXTENSION));
                     $slipIsImage = in_array($slipExt, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
                 ?>
-                <tr id="payment-<?= (int) $p['id'] ?>">
+                <tr id="payment-<?= (int) $p['id'] ?>" class="payments-table-row">
                     <td class="payment-date"><?= e(date('d/m/Y H:i', strtotime($p['created_at']))) ?></td>
                     <td class="payment-payer">
                         <strong><?= e($p['student_name']) ?></strong>
+                        <?php if (!empty($p['student_phone'])): ?>
+                            <span class="payment-payer-phone"><?= e($p['student_phone']) ?></span>
+                        <?php endif; ?>
                         <?php if (!empty($p['student_email'])): ?>
-                            <span><?= e($p['student_email']) ?></span>
+                            <span class="payment-payer-email"><?= e($p['student_email']) ?></span>
                         <?php endif; ?>
                     </td>
-                    <td class="payment-phone"><?= e($p['student_phone']) ?></td>
                     <td class="payment-courses">
                         <?php if ($items): ?>
+                            <?php if (count($items) === 1): ?>
+                                <?= e($items[0]['title']) ?>
+                            <?php else: ?>
                             <ul class="payment-course-list">
                                 <?php foreach ($items as $item): ?>
-                                <li><?= e($item['title']) ?> <small>(<?= e(formatPrice((float) $item['amount'])) ?>)</small></li>
+                                <li><?= e($item['title']) ?></li>
                                 <?php endforeach; ?>
                             </ul>
+                            <?php endif; ?>
                         <?php else: ?>
                             <?= e($p['course_title'] ?? '-') ?>
                         <?php endif; ?>
@@ -159,7 +164,7 @@ $statusLabels = [
                         <?php if ($sessionSummary): ?>
                             <span><?= e($sessionSummary) ?></span>
                             <?php if ($paymentBookings): ?>
-                            <a href="<?= APP_URL ?>/admin/bookings.php" class="btn btn-outline btn-sm" style="margin-top:.35rem">ดูการจอง #<?= (int) $paymentBookings[0]['id'] ?></a>
+                            <a href="<?= APP_URL ?>/admin/bookings.php" class="btn btn-outline btn-sm payment-session-link">ดูการจอง</a>
                             <?php endif; ?>
                         <?php else: ?>
                             <span class="payment-slip-missing">—</span>
@@ -180,7 +185,7 @@ $statusLabels = [
                             <span class="payment-slip-missing">—</span>
                         <?php endif; ?>
                     </td>
-                    <td><span class="badge badge-<?= e($paymentStatus) ?>"><?= e($statusLabels[$paymentStatus] ?? $paymentStatus) ?></span></td>
+                    <td class="payment-status"><span class="badge badge-<?= e($paymentStatus) ?>"><?= e($statusLabels[$paymentStatus] ?? $paymentStatus) ?></span></td>
                     <td class="actions">
                         <?php if ($paymentStatus === 'pending'): ?>
                         <form method="post" class="payment-action-form table-actions">
@@ -200,14 +205,6 @@ $statusLabels = [
                         <?php endif; ?>
                     </td>
                 </tr>
-                <?php if ($p['note']): ?>
-                <tr class="payment-note-tr">
-                    <td colspan="9" class="payment-note-row">
-                        <span class="payment-note-label">หมายเหตุ</span>
-                        <?= e($p['note']) ?>
-                    </td>
-                </tr>
-                <?php endif; ?>
                 <?php endforeach; ?>
             </tbody>
         </table>

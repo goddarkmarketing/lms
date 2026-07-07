@@ -94,12 +94,21 @@
   }
 
   /* ── Payments ── */
+  .admin-card--spaced {
+    @apply mb-4;
+  }
+
+  .payments-table .payments-table-row td {
+    @apply align-middle;
+    vertical-align: middle;
+  }
+
   .payment-course-list {
     @apply m-0 list-none p-0 text-sm;
   }
 
-  .payment-course-list li {
-    @apply mb-[0.15rem];
+  .payment-course-list li + li {
+    @apply mt-1;
   }
 
   .payments-table .payment-date {
@@ -108,25 +117,34 @@
   }
 
   .payments-table .payment-payer {
-    @apply min-w-40;
+    @apply min-w-[11rem] max-w-[14rem];
   }
 
   .payments-table .payment-payer strong {
-    @apply block font-semibold;
+    @apply block font-semibold leading-snug;
     color: var(--color-text-heading);
   }
 
-  .payments-table .payment-payer span {
-    @apply mt-[0.15rem] block break-words text-xs;
+  .payments-table .payment-payer-phone {
+    @apply mt-0.5 block text-sm font-medium;
+    color: var(--color-text-heading);
+  }
+
+  .payments-table .payment-payer-email {
+    @apply mt-0.5 block break-all text-xs;
     color: var(--color-text-muted);
   }
 
-  .payments-table .payment-phone {
-    @apply whitespace-nowrap;
+  .payments-table .payment-courses {
+    @apply min-w-[10rem] max-w-[18rem] text-sm leading-snug;
   }
 
-  .payments-table .payment-courses {
-    @apply min-w-48 max-w-[22rem];
+  .payments-table .payment-session {
+    @apply min-w-[8rem] text-sm;
+  }
+
+  .payments-table .payment-session-link {
+    @apply mt-1.5;
   }
 
   .payments-table .col-amount,
@@ -135,8 +153,13 @@
     color: var(--color-text-heading);
   }
 
-  .payments-table .col-slip {
+  .payments-table .col-slip,
+  .payments-table .payment-status {
     @apply whitespace-nowrap text-center;
+  }
+
+  .payments-table .actions {
+    @apply whitespace-nowrap text-right;
   }
 
   .payment-slip-btn {
@@ -147,27 +170,9 @@
     color: var(--color-text-muted);
   }
 
-  .payment-note-tr td {
-    @apply border-b;
-    background: #f8fafc;
-    border-color: var(--color-border);
-  }
-
-  .payment-note-row {
-    @apply text-sm;
-    color: var(--color-text-muted);
-    padding-top: 0.55rem !important;
-    padding-bottom: 0.55rem !important;
-  }
-
-  .payment-note-label {
-    @apply mr-[0.45rem] inline-block rounded-full bg-slate-200 px-[0.45rem] py-[0.1rem] align-middle text-[0.68rem] font-bold uppercase tracking-wide;
-    color: #475569;
-  }
-
   .payment-action-form {
-    @apply inline-flex flex-row flex-nowrap items-center;
-    gap: 0.5rem;
+    @apply inline-flex flex-row flex-nowrap items-center justify-end;
+    gap: 0.4rem;
   }
 
   .payment-action-done {
