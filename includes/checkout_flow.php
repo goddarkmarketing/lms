@@ -244,6 +244,49 @@ function getPendingEnrollmentsForAdmin(): array
     }
 }
 
+function rejectDuplicatePendingPayments(array $verifiedPayment, int $verifiedPaymentId): void
+{
+    $phone = trim((string) ($verifiedPayment['student_phone'] ?? ''));
+    if ($phone === '' || $verifiedPaymentId <= 0) {
+        return;
+    }
+
+    $courseIds = getPaymentCourseIds($verifiedPaymentId);
+    if (!$courseIds) {
+        $courseIds = parseCartIdsFromNote($verifiedPayment['note'] ?? '');
+    }
+    if (!$courseIds && !empty($verifiedPayment['course_id'])) {
+        $courseIds = [(int) $verifiedPayment['course_id']];
+    }
+    if (!$courseIds) {
+        return;
+    }
+
+    $stmt = db()->prepare('
+        SELECT id, note, course_id FROM payments
+        WHERE student_phone = ? AND status = "pending" AND id != ?
+    ');
+    $stmt->execute([$phone, $verifiedPaymentId]);
+    $reject = db()->prepare('UPDATE payments SET status = "rejected" WHERE id = ?');
+
+    foreach ($stmt->fetchAll() as $row) {
+        $pendingId = (int) ($row['id'] ?? 0);
+        if ($pendingId <= 0) {
+            continue;
+        }
+        $pendingCourseIds = getPaymentCourseIds($pendingId);
+        if (!$pendingCourseIds) {
+            $pendingCourseIds = parseCartIdsFromNote($row['note'] ?? '');
+        }
+        if (!$pendingCourseIds && !empty($row['course_id'])) {
+            $pendingCourseIds = [(int) $row['course_id']];
+        }
+        if (array_intersect($courseIds, $pendingCourseIds)) {
+            $reject->execute([$pendingId]);
+        }
+    }
+}
+
 function resolveCheckoutStudentId(string $name, ?string $email, string $phone): int
 {
     require_once __DIR__ . '/student_auth.php';
@@ -256,6 +299,17 @@ function resolveCheckoutStudentId(string $name, ?string $email, string $phone): 
 function getCourseIdsFromCartItems(array $items): array
 {
     return array_values(array_filter(array_map(static fn ($item) => (int) ($item['id'] ?? 0), $items)));
+}
+
+function enrollmentStatusRank(string $status): int
+{
+    return match ($status) {
+        'completed' => 4,
+        'active' => 3,
+        'pending' => 2,
+        'cancelled' => 1,
+        default => 0,
+    };
 }
 
 function syncEnrollmentsFromPaymentsForStudent(int $studentId): void
@@ -276,6 +330,8 @@ function syncEnrollmentsFromPaymentsForStudent(int $studentId): void
         ORDER BY created_at ASC
     ');
     $payStmt->execute([$phone]);
+
+    $desiredByCourse = [];
     foreach ($payStmt->fetchAll() as $payment) {
         $paymentId = (int) ($payment['id'] ?? 0);
         $courseIds = $paymentId > 0 ? getPaymentCourseIds($paymentId) : [];
@@ -288,8 +344,23 @@ function syncEnrollmentsFromPaymentsForStudent(int $studentId): void
         if (!$courseIds) {
             continue;
         }
-        $status = ($payment['status'] ?? '') === 'verified' ? 'active' : 'pending';
-        enrollStudentInCourses($studentId, $courseIds, $status);
+
+        $paymentActive = ($payment['status'] ?? '') === 'verified';
+        foreach ($courseIds as $courseId) {
+            $courseId = (int) $courseId;
+            if ($courseId <= 0) {
+                continue;
+            }
+            if ($paymentActive) {
+                $desiredByCourse[$courseId] = 'active';
+            } elseif (!isset($desiredByCourse[$courseId])) {
+                $desiredByCourse[$courseId] = 'pending';
+            }
+        }
+    }
+
+    foreach ($desiredByCourse as $courseId => $status) {
+        enrollStudentInCourses($studentId, [(int) $courseId], $status);
     }
 }
 
@@ -317,16 +388,24 @@ function enrollStudentInCourses(int $studentId, array $courseIds, string $status
         $status = 'active';
     }
 
-    $check = db()->prepare('SELECT id FROM enrollments WHERE student_id = ? AND course_id = ? LIMIT 1');
+    $check = db()->prepare('SELECT id, status FROM enrollments WHERE student_id = ? AND course_id = ? LIMIT 1');
     $insert = db()->prepare('INSERT INTO enrollments (student_id, course_id, status) VALUES (?, ?, ?)');
+    $upd = db()->prepare('UPDATE enrollments SET status = ? WHERE student_id = ? AND course_id = ?');
 
     foreach (array_unique(array_map('intval', $courseIds)) as $courseId) {
         if ($courseId <= 0) {
             continue;
         }
         $check->execute([$studentId, $courseId]);
-        if ($check->fetchColumn()) {
-            $upd = db()->prepare('UPDATE enrollments SET status = ? WHERE student_id = ? AND course_id = ?');
+        $existing = $check->fetch();
+        if ($existing) {
+            $current = (string) ($existing['status'] ?? 'pending');
+            if (
+                $status === 'pending'
+                && enrollmentStatusRank($current) > enrollmentStatusRank('pending')
+            ) {
+                continue;
+            }
             $upd->execute([$status, $studentId, $courseId]);
             continue;
         }

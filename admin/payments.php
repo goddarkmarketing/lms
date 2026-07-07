@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_id'], $_POST[
             $payment = $fetch->fetch();
             if ($payment && ($payment['status'] ?? '') !== 'verified') {
                 enrollFromPayment($payment);
+                rejectDuplicatePendingPayments($payment, $paymentId);
             }
         }
         $stmt = db()->prepare('UPDATE payments SET status = ? WHERE id = ?');

@@ -119,6 +119,24 @@ $activeStmt->execute([$studentId, $courseId]);
 $activeStatus = (string) ($activeStmt->fetchColumn() ?: '');
 check('หลังยืนยัน: เปิดสิทธิ์เรียน (active)', $activeStatus === 'active', $activeStatus);
 
+// --- duplicate pending payments must not revert active on profile sync ---
+$dupPaymentId = insertBankTransferPayment(
+    $courseId,
+    $name,
+    $email,
+    $phone,
+    $amount,
+    date('Y-m-d'),
+    '15:00',
+    null,
+    $note,
+    null
+);
+check('สร้างรายการแจ้งชำระซ้ำได้', $dupPaymentId > 0, "#{$dupPaymentId}");
+syncEnrollmentsFromPaymentsForStudent($studentId);
+$activeStmt->execute([$studentId, $courseId]);
+check('หลัง sync: ยังคงเปิดสิทธิ์ (active)', $activeStmt->fetchColumn() === 'active');
+
 $payStatusStmt->execute([$paymentId]);
 check('หลังยืนยัน: สถานะการชำระ = verified', $payStatusStmt->fetchColumn() === 'verified');
 
