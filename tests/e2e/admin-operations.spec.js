@@ -38,10 +38,39 @@ test.describe('ผู้ดูแล — จัดการรายการช
     await expect(page.locator('.admin-content')).toBeVisible();
   });
 
-  test('หน้ารอบเรียน Live: โหลดได้', async ({ page }) => {
-    const response = await page.goto('admin/sessions.php');
-    expect(response?.ok()).toBeTruthy();
-    await expect(page.locator('.admin-content')).toBeVisible();
+  test('หน้ารอบเรียน Live: เพิ่มรอบเรียนได้', async ({ page }) => {
+    await page.goto('admin/sessions.php?action=add');
+    const migrationWarning = page.locator('.alert-warning, .alert-error');
+    if ((await migrationWarning.count()) > 0) {
+      const text = await migrationWarning.first().textContent();
+      test.skip(true, text || 'schema ยังไม่พร้อม — รัน migration phase 9');
+    }
+
+    const courseSelect = page.locator('select[name="course_id"]');
+    await expect(courseSelect).toBeVisible();
+    const options = courseSelect.locator('option[value]:not([value=""])');
+    test.skip((await options.count()) === 0, 'ไม่มีคอร์สในระบบ');
+
+    const firstValue = await options.first().getAttribute('value');
+    await courseSelect.selectOption(firstValue || '');
+
+    const starts = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+    starts.setHours(10, 0, 0, 0);
+    const ends = new Date(starts.getTime() + 90 * 60 * 1000);
+    const toLocal = (/** @type {Date} */ d) => {
+      const p = (/** @type {number} */ n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+
+    await page.locator('input[name="title"]').fill(`E2E Session ${Date.now()}`);
+    await page.locator('input[name="starts_at"]').fill(toLocal(starts));
+    await page.locator('input[name="ends_at"]').fill(toLocal(ends));
+    await page.locator('button[type="submit"]').click();
+
+    await page.waitForURL(/\/admin\/sessions\.php/, { timeout: 15_000 });
+    await expect(page.locator('.alert-success, .alert-error').first()).toBeVisible();
+    await expect(page.locator('.alert-error')).toHaveCount(0);
+    await expect(page.locator('.alert-success')).toContainText(/เพิ่มรอบเรียนเรียบร้อย/);
   });
 
   test('หน้าตั้งค่า LINE OA: โหลดส่วน integration', async ({ page }) => {

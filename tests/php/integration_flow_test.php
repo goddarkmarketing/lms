@@ -13,18 +13,23 @@ require_once dirname(__DIR__, 2) . '/includes/student_auth.php';
 require_once dirname(__DIR__, 2) . '/includes/checkout_flow.php';
 require_once dirname(__DIR__, 2) . '/includes/booking.php';
 require_once dirname(__DIR__, 2) . '/includes/cart.php';
+require_once dirname(__DIR__, 2) . '/includes/schema.php';
+require_once __DIR__ . '/test_helpers.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/** @var list<array{label: string, ok: bool, detail: string}> */
-$checks = [];
+test_reset_checks();
 
-function check(string $label, bool $ok, string $detail = ''): void
-{
-    global $checks;
-    $checks[] = ['label' => $label, 'ok' => $ok, 'detail' => $detail];
+foreach (requiredDatabaseTables() as $table) {
+    test_check("schema: ตาราง {$table}", databaseTableExists($table));
+}
+$missing = missingDatabaseTables();
+if ($missing) {
+    test_print_summary('LMS Integration Flow Test');
+    echo "\nหยุด: " . migrationHintMessage($missing) . "\n";
+    exit(1);
 }
 
 function ensureRecordedTestCourse(): array
@@ -62,20 +67,20 @@ $name = "E2E Tester {$runId}";
 
 // --- ผู้เรียน: สมัครสมาชิก ---
 $registerResult = registerStudent($name, $phone, $password, $email);
-check('สมัครสมาชิกสำเร็จ', $registerResult['ok'], $registerResult['message'] ?? '');
+test_check('สมัครสมาชิกสำเร็จ', $registerResult['ok'], $registerResult['message'] ?? '');
 $studentId = (int) ($_SESSION['student_id'] ?? 0);
-check('มี student_id ใน session', $studentId > 0, "#{$studentId}");
+test_check('มี student_id ใน session', $studentId > 0, "#{$studentId}");
 
 $student = currentStudent();
-check('โหลดโปรไฟล์นักเรียนได้', $student !== null && ($student['phone'] ?? '') === $phone);
+test_check('โหลดโปรไฟล์นักเรียนได้', $student !== null && ($student['phone'] ?? '') === $phone);
 
 // --- ผู้เรียน: ใส่ตะกร้า + แจ้งโอน ---
 $course = ensureRecordedTestCourse();
 $courseId = (int) ($course['id'] ?? 0);
-check('มีคอร์สทดสอบ VOD', $courseId > 0, $course['slug'] ?? '');
+test_check('มีคอร์สทดสอบ VOD', $courseId > 0, $course['slug'] ?? '');
 
 $_SESSION['cart_course_ids'] = [$courseId];
-check('ตะกร้ามีคอร์ส', cartCount() === 1);
+test_check('ตะกร้ามีคอร์ส', cartCount() === 1);
 
 $amount = cartTotal();
 $note = appendCartIdsToNote('E2E integration test');
@@ -91,7 +96,7 @@ $paymentId = insertBankTransferPayment(
     $note,
     null
 );
-check('บันทึกการแจ้งชำระ (โอนธนาคาร)', $paymentId > 0, "#{$paymentId}");
+test_check('บันทึกการแจ้งชำระ (โอนธนาคาร)', $paymentId > 0, "#{$paymentId}");
 
 savePaymentItems($paymentId, cartItems());
 enrollStudentInCourses($studentId, [$courseId], 'pending');
@@ -99,17 +104,17 @@ enrollStudentInCourses($studentId, [$courseId], 'pending');
 $pendingStmt = db()->prepare('SELECT status FROM enrollments WHERE student_id = ? AND course_id = ? LIMIT 1');
 $pendingStmt->execute([$studentId, $courseId]);
 $pendingStatus = (string) ($pendingStmt->fetchColumn() ?: '');
-check('สถานะลงทะเบียน = รอตรวจสอบ (pending)', $pendingStatus === 'pending', $pendingStatus);
+test_check('สถานะลงทะเบียน = รอตรวจสอบ (pending)', $pendingStatus === 'pending', $pendingStatus);
 
 $payStatusStmt = db()->prepare('SELECT status FROM payments WHERE id = ? LIMIT 1');
 $payStatusStmt->execute([$paymentId]);
-check('สถานะการชำระ = pending', $payStatusStmt->fetchColumn() === 'pending');
+test_check('สถานะการชำระ = pending', $payStatusStmt->fetchColumn() === 'pending');
 
 // --- ผู้ดูแล: ยืนยันการชำระ ---
 $paymentRow = db()->prepare('SELECT * FROM payments WHERE id = ? LIMIT 1');
 $paymentRow->execute([$paymentId]);
 $payment = $paymentRow->fetch() ?: [];
-check('ดึงรายการชำระเงินใน admin ได้', $payment !== []);
+test_check('ดึงรายการชำระเงินใน admin ได้', $payment !== []);
 
 enrollFromPayment($payment);
 db()->prepare('UPDATE payments SET status = "verified" WHERE id = ?')->execute([$paymentId]);
@@ -117,7 +122,7 @@ db()->prepare('UPDATE payments SET status = "verified" WHERE id = ?')->execute([
 $activeStmt = db()->prepare('SELECT status FROM enrollments WHERE student_id = ? AND course_id = ? LIMIT 1');
 $activeStmt->execute([$studentId, $courseId]);
 $activeStatus = (string) ($activeStmt->fetchColumn() ?: '');
-check('หลังยืนยัน: เปิดสิทธิ์เรียน (active)', $activeStatus === 'active', $activeStatus);
+test_check('หลังยืนยัน: เปิดสิทธิ์เรียน (active)', $activeStatus === 'active', $activeStatus);
 
 // --- duplicate pending payments must not revert active on profile sync ---
 $dupPaymentId = insertBankTransferPayment(
@@ -132,45 +137,28 @@ $dupPaymentId = insertBankTransferPayment(
     $note,
     null
 );
-check('สร้างรายการแจ้งชำระซ้ำได้', $dupPaymentId > 0, "#{$dupPaymentId}");
+test_check('สร้างรายการแจ้งชำระซ้ำได้', $dupPaymentId > 0, "#{$dupPaymentId}");
 syncEnrollmentsFromPaymentsForStudent($studentId);
 $activeStmt->execute([$studentId, $courseId]);
-check('หลัง sync: ยังคงเปิดสิทธิ์ (active)', $activeStmt->fetchColumn() === 'active');
+test_check('หลัง sync: ยังคงเปิดสิทธิ์ (active)', $activeStmt->fetchColumn() === 'active');
 
 $payStatusStmt->execute([$paymentId]);
-check('หลังยืนยัน: สถานะการชำระ = verified', $payStatusStmt->fetchColumn() === 'verified');
+test_check('หลังยืนยัน: สถานะการชำระ = verified', $payStatusStmt->fetchColumn() === 'verified');
 
 $courseIds = getPaymentCourseIds($paymentId);
-check('payment_items บันทึกคอร์สได้', in_array($courseId, $courseIds, true), implode(',', $courseIds));
+test_check('payment_items บันทึกคอร์สได้', in_array($courseId, $courseIds, true), implode(',', $courseIds));
 
 // --- ผู้เรียน: อัปเดตโปรไฟล์ ---
 $profileResult = updateStudentProfile($studentId, "{$name} Updated", $email, null);
-check('แก้ไขโปรไฟล์ได้', $profileResult['ok'], $profileResult['message'] ?? '');
+test_check('แก้ไขโปรไฟล์ได้', $profileResult['ok'], $profileResult['message'] ?? '');
 
 $nameCheck = db()->prepare('SELECT full_name FROM students WHERE id = ? LIMIT 1');
 $nameCheck->execute([$studentId]);
-check('ชื่อโปรไฟล์อัปเดตแล้ว', $nameCheck->fetchColumn() === "{$name} Updated");
+test_check('ชื่อโปรไฟล์อัปเดตแล้ว', $nameCheck->fetchColumn() === "{$name} Updated");
 
 // --- สรุป ---
-echo "=== LMS Integration Flow Test ===\n";
 echo "Student: {$phone} / {$email}\n";
 echo "Payment: #{$paymentId}\n\n";
 
-$pass = 0;
-$fail = 0;
-foreach ($checks as $c) {
-    $icon = $c['ok'] ? 'PASS' : 'FAIL';
-    if ($c['ok']) {
-        $pass++;
-    } else {
-        $fail++;
-    }
-    echo "[{$icon}] {$c['label']}";
-    if ($c['detail'] !== '') {
-        echo " — {$c['detail']}";
-    }
-    echo "\n";
-}
-
-echo "\nResult: {$pass} passed, {$fail} failed\n";
-exit($fail > 0 ? 1 : 0);
+$result = test_print_summary('LMS Integration Flow Test');
+exit($result['fail'] > 0 ? 1 : 0);

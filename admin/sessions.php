@@ -6,6 +6,10 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 requireAdmin();
 require_once dirname(__DIR__) . '/includes/booking.php';
 require_once dirname(__DIR__) . '/includes/media_upload.php';
+require_once dirname(__DIR__) . '/includes/schema.php';
+
+$schemaMissing = missingDatabaseTables();
+$schemaError = $schemaMissing ? migrationHintMessage($schemaMissing) : '';
 
 $filterCourse = (int) ($_GET['course_id'] ?? 0);
 
@@ -46,6 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif (isset($_POST['remove_image'])) {
         $imageUrl = '';
+    }
+
+    if ($schemaMissing) {
+        flash('admin_error', $schemaError);
+        redirect('/admin/sessions.php');
     }
 
     try {
@@ -113,6 +122,7 @@ try {
 
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert alert-error"><?= e($error) ?></div><?php endif; ?>
+<?php if ($schemaError && !$error): ?><div class="alert alert-warning"><?= e($schemaError) ?></div><?php endif; ?>
 
 <?php if ($action === 'add' || ($action === 'edit' && $editSession)): ?>
 <div class="admin-card">

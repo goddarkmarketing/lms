@@ -27,11 +27,22 @@ npm test
 npm run test:e2e
 ```
 
-เทสต์ backend แบบ PHP (ไม่ใช้เบราว์เซอร์):
+เทสต์ backend แบบ PHP (schema + booking + integration):
 
 ```bash
 npm run test:php
 ```
+
+เฉพาะ schema / booking:
+
+```bash
+npm run test:php:schema
+npm run test:php:booking
+```
+
+**ก่อนรันเทสต์บนเซิร์ฟเวอร์** ต้องรัน migration ให้ครบ (โดยเฉพาะ phase 9 สำหรับ `course_sessions`):
+
+`https://your-domain/database/run_all_migrations.php`
 
 รันทั้ง PHP + E2E:
 
@@ -63,6 +74,9 @@ npm run test:report
 
 | ไฟล์ | ตรวจสอบ |
 |------|---------|
+| `php/run_all.php` | รัน schema + booking + integration |
+| `php/schema_test.php` | ตรวจตาราง/column migration ครบ |
+| `php/booking_test.php` | ทุกฟังก์ชันใน `includes/booking.php` |
 | `php/integration_flow_test.php` | สมัคร → แจ้งโอน → admin ยืนยัน → เปิดสิทธิ์ (CLI) |
 | `e2e/student-admin-flow.spec.js` | flow ผู้เรียน + ผู้ดูแลครบวงจรในเบราว์เซอร์ |
 | `e2e/admin-operations.spec.js` | หน้า admin ชำระเงิน / นักเรียน / จองคลาส / LINE |
