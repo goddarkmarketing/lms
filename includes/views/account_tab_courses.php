@@ -69,11 +69,6 @@ if (!function_exists('isLiveCourse')) {
         <div class="my-courses-item-body">
             <div class="my-courses-item-head">
                 <h2><?= e($course['title']) ?></h2>
-                <?php if ($isPending): ?>
-                <span class="my-courses-badge my-courses-badge--pending">รอตรวจสอบ</span>
-                <?php elseif (!$isLiveCourseItem): ?>
-                <span class="my-courses-badge my-courses-badge--active">เปิดสิทธิ์แล้ว</span>
-                <?php endif; ?>
             </div>
             <?php if (!empty($course['subtitle']) && !$isLiveCourseItem && !$isPending): ?>
             <p class="my-courses-item-sub"><?= e($course['subtitle']) ?></p>
@@ -128,8 +123,13 @@ if (!function_exists('isLiveCourse')) {
             <?php endif; ?>
             <?php endif; ?>
         </div>
-        <?php if (!$isPending): ?>
         <div class="my-courses-item-actions">
+            <?php if ($isPending): ?>
+            <span class="my-courses-badge my-courses-badge--pending">รอตรวจสอบ</span>
+            <?php elseif (!$isLiveCourseItem): ?>
+            <span class="my-courses-badge my-courses-badge--active">เปิดสิทธิ์แล้ว</span>
+            <?php endif; ?>
+            <?php if (!$isPending): ?>
             <a href="<?= e($startUrl) ?>" class="btn btn-primary btn-sm"<?= !empty($startNewTab) ? ' target="_blank" rel="noopener"' : '' ?>><?= e($startLabel) ?></a>
             <?php if ($cert): ?>
             <a href="<?= APP_URL ?>/public/certificate.php?code=<?= urlencode($cert['certificate_code']) ?>" class="btn btn-outline btn-sm" target="_blank">ใบประกาศ</a>
@@ -138,8 +138,8 @@ if (!function_exists('isLiveCourse')) {
             <?php elseif ($prog['percent'] >= 100 && certificateRequiresQuiz() && $quizzes): ?>
             <span class="my-courses-status-btn" title="ต้องผ่านแบบทดสอบก่อน">รอผ่านแบบทดสอบ</span>
             <?php endif; ?>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
     </li>
     <?php endforeach; ?>
 </ul>

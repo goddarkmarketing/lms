@@ -531,7 +531,7 @@ function getFirstLessonIdForCourse(int $courseId): ?int
 
 function addCourseSlugToCart(string $slug): bool
 {
-    $course = getCourseBySlug($slug);
+    $course = getActiveCourseBySlug($slug);
     if (!$course) {
         return false;
     }

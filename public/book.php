@@ -12,8 +12,8 @@ if ($slug === '') {
     redirect('/public/courses.php');
 }
 
-$course = getCourseBySlug($slug);
-if (!$course || empty($course['is_active'])) {
+$course = getActiveCourseBySlug($slug);
+if (!$course) {
     flash('payment_error', 'ไม่พบคอร์สที่ต้องการ');
     redirect('/public/courses.php');
 }

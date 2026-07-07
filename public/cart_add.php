@@ -17,7 +17,7 @@ if ($courseId <= 0) {
     redirect('/public/courses.php');
 }
 
-$course = getCourseById($courseId);
+$course = getActiveCourseById($courseId);
 if (!$course) {
     if ($isAjax) {
         header('Content-Type: application/json; charset=utf-8');

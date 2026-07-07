@@ -1,15 +1,11 @@
 <?php
 declare(strict_types=1);
-$pageTitle = 'จัดการคอร์ส';
-require_once dirname(__DIR__) . '/includes/admin_header.php';
+
+require_once dirname(__DIR__) . '/includes/auth.php';
+requireAdmin();
 require_once dirname(__DIR__) . '/includes/media_upload.php';
 require_once dirname(__DIR__) . '/includes/progress.php';
 require_once dirname(__DIR__) . '/includes/booking.php';
-
-$message = flash('admin_success');
-$error = flash('admin_error');
-$action = $_GET['action'] ?? 'list';
-$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
@@ -26,8 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $highlights = trim($_POST['highlights'] ?? '');
     $imageUrl = trim($_POST['image_url'] ?? '');
     $sortOrder = (int) ($_POST['sort_order'] ?? 0);
-    $isFeatured = isset($_POST['is_featured']) ? 1 : 0;
-    $isActive = isset($_POST['is_active']) ? 1 : 0;
+    $isFeatured = parseCheckboxFlag($_POST['is_featured'] ?? 0);
+    $isActive = parseCheckboxFlag($_POST['is_active'] ?? 0);
     $courseType = $_POST['course_type'] ?? 'recorded';
     $zoomUrl = trim($_POST['zoom_url'] ?? '');
     $editId = (int) ($_POST['id'] ?? 0);
@@ -71,6 +67,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect('/admin/courses.php');
 }
+
+$pageTitle = 'จัดการคอร์ส';
+require_once dirname(__DIR__) . '/includes/admin_header.php';
+
+$message = flash('admin_success');
+$error = flash('admin_error');
+$action = $_GET['action'] ?? 'list';
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 $editCourse = $id ? getCourseById($id) : null;
 $courses = getCourses(null, false);
@@ -172,10 +176,12 @@ $courses = getCourses(null, false);
                 </div>
             </div>
             <div class="form-group">
-                <label><input type="checkbox" name="is_featured" <?= !empty($editCourse['is_featured']) ? 'checked' : '' ?>> แสดงในหน้าแรก</label>
+                <input type="hidden" name="is_featured" value="0">
+                <label><input type="checkbox" name="is_featured" value="1" <?= !empty($editCourse['is_featured']) ? 'checked' : '' ?>> แสดงในหน้าแรก</label>
             </div>
             <div class="form-group">
-                <label><input type="checkbox" name="is_active" <?= ($editCourse['is_active'] ?? 1) ? 'checked' : '' ?>> เปิดใช้งาน</label>
+                <input type="hidden" name="is_active" value="0">
+                <label><input type="checkbox" name="is_active" value="1" <?= ($editCourse['is_active'] ?? 1) ? 'checked' : '' ?>> เปิดใช้งาน</label>
             </div>
             <div class="admin-form-actions">
                 <button type="submit" class="btn btn-primary">บันทึก</button>

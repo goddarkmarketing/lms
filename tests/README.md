@@ -76,7 +76,7 @@ npm run test:report
 |------|---------|
 | `php/run_all.php` | รัน schema + booking + integration |
 | `php/schema_test.php` | ตรวจตาราง/column migration ครบ |
-| `php/booking_test.php` | ทุกฟังก์ชันใน `includes/booking.php` |
+| `php/courses_test.php` | เปิด/ปิดคอร์ส (is_active) + catalog helpers |
 | `php/integration_flow_test.php` | สมัคร → แจ้งโอน → admin ยืนยัน → เปิดสิทธิ์ (CLI) |
 | `e2e/student-admin-flow.spec.js` | flow ผู้เรียน + ผู้ดูแลครบวงจรในเบราว์เซอร์ |
 | `e2e/admin-operations.spec.js` | หน้า admin ชำระเงิน / นักเรียน / จองคลาส / LINE |

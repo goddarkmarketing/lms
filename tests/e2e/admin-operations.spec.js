@@ -38,6 +38,29 @@ test.describe('ผู้ดูแล — จัดการรายการช
     await expect(page.locator('.admin-content')).toBeVisible();
   });
 
+  test('หน้าคอร์ส: ปิดใช้งานแล้วไม่แสดงใน catalog', async ({ page }) => {
+    await page.goto('admin/courses.php');
+    const liveRow = page.locator('table.data-table tbody tr', { hasText: 'Live ทดสอบระบบจอง' }).first();
+    test.skip((await liveRow.count()) === 0, 'ไม่มีคอร์ส Live demo');
+
+    await liveRow.locator('a', { hasText: 'แก้ไข' }).click();
+    await page.locator('input[name="is_active"][type="checkbox"]').setChecked(false);
+    await page.locator('form.modal-form button[type="submit"]').click();
+    await expect(page.locator('.alert-success')).toBeVisible({ timeout: 10_000 });
+
+    await page.goto('public/courses.php');
+    await expect(page.locator('.course-card', { hasText: 'Live ทดสอบระบบจอง' })).toHaveCount(0);
+
+    // restore for other tests
+    await loginAdmin(page);
+    await page.goto('admin/courses.php');
+    const restoreRow = page.locator('table.data-table tbody tr', { hasText: 'Live ทดสอบระบบจอง' }).first();
+    await restoreRow.locator('a', { hasText: 'แก้ไข' }).click();
+    await page.locator('input[name="is_active"][type="checkbox"]').setChecked(true);
+    await page.locator('form.modal-form button[type="submit"]').click();
+    await expect(page.locator('.alert-success')).toBeVisible({ timeout: 10_000 });
+  });
+
   test('หน้ารอบเรียน Live: เพิ่มรอบเรียนได้', async ({ page }) => {
     await page.goto('admin/sessions.php?action=add');
     const migrationWarning = page.locator('.alert-warning, .alert-error');

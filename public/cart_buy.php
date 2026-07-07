@@ -9,7 +9,7 @@ if ($courseId <= 0) {
     redirect('/public/courses.php');
 }
 
-$course = getCourseById($courseId);
+$course = getActiveCourseById($courseId);
 if (!$course) {
     redirect('/public/courses.php');
 }

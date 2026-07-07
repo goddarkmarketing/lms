@@ -79,7 +79,7 @@ function getLearningPathItems(): array
     ];
     $result = [];
     foreach ($paths as $path) {
-        $course = getCourseBySlug($path['slug']);
+        $course = getActiveCourseBySlug($path['slug']);
         if ($course) {
             $result[] = array_merge($path, [
                 'title' => $course['title'],

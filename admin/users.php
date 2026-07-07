@@ -1,16 +1,13 @@
 <?php
 declare(strict_types=1);
 
-$pageTitle = 'ผู้ดูแลระบบ';
-require_once dirname(__DIR__) . '/includes/admin_header.php';
-
-$message = flash('admin_success');
-$error = flash('admin_error');
-$editId = (int) ($_GET['edit'] ?? 0);
+require_once dirname(__DIR__) . '/includes/auth.php';
+requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
     $action = $_POST['action'] ?? '';
+    $admin = currentAdmin();
 
     if ($action === 'create') {
         $result = createAdminUser(
@@ -53,6 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/admin/users.php');
     }
 }
+
+$pageTitle = 'ผู้ดูแลระบบ';
+require_once dirname(__DIR__) . '/includes/admin_header.php';
+
+$message = flash('admin_success');
+$error = flash('admin_error');
+$editId = (int) ($_GET['edit'] ?? 0);
 
 $admins = getAllAdmins();
 $editAdmin = null;

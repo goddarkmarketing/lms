@@ -1809,7 +1809,6 @@ a:hover { color: var(--red-dark); }
 .my-courses-item-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: .65rem;
   margin-bottom: .15rem;
 }
@@ -1936,12 +1935,18 @@ a:hover { color: var(--red-dark); }
 
 .my-courses-item-actions {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: .45rem;
-  align-items: center;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: .4rem;
   min-width: 6.5rem;
+}
+
+.my-courses-item-actions .btn,
+.my-courses-item-actions .my-courses-status-btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
 .my-courses-status-btn {
@@ -1994,24 +1999,15 @@ a:hover { color: var(--red-dark); }
     justify-content: center;
   }
   .my-courses-item {
-    grid-template-columns: 6.5rem minmax(0, 1fr);
-    grid-template-rows: auto auto;
+    grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+    grid-template-rows: auto;
     gap: .65rem .85rem;
     padding: .75rem;
   }
-  .my-courses-item:not(:has(.my-courses-item-actions)) {
-    grid-template-rows: auto;
-  }
   .my-courses-item-cover {
-    grid-row: span 2;
+    grid-row: span 1;
     align-self: center;
     width: 6.5rem;
-  }
-  .my-courses-item:not(:has(.my-courses-item-actions)) .my-courses-item-cover {
-    grid-row: span 1;
-  }
-  .my-courses-item-head {
-    flex-wrap: wrap;
   }
   .my-courses-item-head h2 {
     white-space: normal;
@@ -2023,9 +2019,13 @@ a:hover { color: var(--red-dark); }
     font-size: .8rem;
   }
   .my-courses-item-actions {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    min-width: 5.5rem;
+  }
+  .my-courses-item-body {
     grid-column: 2;
-    min-width: 0;
-    justify-content: flex-start;
   }
   .my-courses-item-actions .btn,
   .my-courses-item-actions .my-courses-status-btn {

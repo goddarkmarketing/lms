@@ -542,6 +542,32 @@ function getCourseBySlug(string $slug): ?array
     return $course ?: null;
 }
 
+function isCourseActive(array $course): bool
+{
+    return (int) ($course['is_active'] ?? 0) === 1;
+}
+
+function getActiveCourseBySlug(string $slug): ?array
+{
+    $course = getCourseBySlug($slug);
+    return ($course && isCourseActive($course)) ? $course : null;
+}
+
+function getActiveCourseById(int $id): ?array
+{
+    $course = getCourseById($id);
+    return ($course && isCourseActive($course)) ? $course : null;
+}
+
+function parseCheckboxFlag(mixed $value): int
+{
+    if (is_array($value)) {
+        $value = end($value);
+    }
+
+    return ($value === '1' || $value === 1 || $value === true || $value === 'on') ? 1 : 0;
+}
+
 function getCourseById(int $id): ?array
 {
     $stmt = db()->prepare('SELECT * FROM courses WHERE id = ? LIMIT 1');

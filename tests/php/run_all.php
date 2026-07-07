@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 $tests = [
     'schema_test.php',
+    'courses_test.php',
     'booking_test.php',
     'integration_flow_test.php',
 ];

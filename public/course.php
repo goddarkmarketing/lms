@@ -22,6 +22,14 @@ try {
     $course = null;
 }
 
+if ($course && !isCourseActive($course)) {
+    $student = currentStudent();
+    $enrolledAccess = $student && studentHasCourseAccess((int) $student['id'], (int) $course['id']);
+    if (!$enrolledAccess) {
+        $course = null;
+    }
+}
+
 if (!$course) {
     $pageTitle = 'ไม่พบคอร์ส';
     require_once dirname(__DIR__) . '/includes/header.php';

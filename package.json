@@ -6,6 +6,7 @@
     "test:e2e": "playwright test tests/e2e",
     "test:php": "php tests/php/run_all.php",
     "test:php:schema": "php tests/php/schema_test.php",
+    "test:php:courses": "php tests/php/courses_test.php",
     "test:php:booking": "php tests/php/booking_test.php",
     "test:php:integration": "php tests/php/integration_flow_test.php",
     "test:flow": "php tests/php/run_all.php && playwright test tests/e2e",
