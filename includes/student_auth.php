@@ -29,10 +29,26 @@ function currentStudent(): ?array
     if ($student !== null) {
         return $student;
     }
-    $stmt = db()->prepare('SELECT id, full_name, email, phone, line_id, line_user_id, created_at FROM students WHERE id = ? LIMIT 1');
-    $stmt->execute([$_SESSION['student_id']]);
-    $student = $stmt->fetch() ?: null;
-    return $student;
+
+    try {
+        $stmt = db()->prepare('SELECT id, full_name, email, phone, line_id, line_user_id, created_at FROM students WHERE id = ? LIMIT 1');
+        $stmt->execute([$_SESSION['student_id']]);
+        $student = $stmt->fetch() ?: null;
+        return $student;
+    } catch (Throwable $e) {
+        try {
+            $stmt = db()->prepare('SELECT id, full_name, email, phone, line_id, created_at FROM students WHERE id = ? LIMIT 1');
+            $stmt->execute([$_SESSION['student_id']]);
+            $row = $stmt->fetch() ?: null;
+            if ($row) {
+                $row['line_user_id'] = null;
+            }
+            $student = $row;
+            return $student;
+        } catch (Throwable $e2) {
+            return null;
+        }
+    }
 }
 
 function attemptStudentLogin(string $identifier, string $password): bool

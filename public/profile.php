@@ -61,21 +61,41 @@ $student = currentStudent();
 $studentId = (int) $student['id'];
 $studentInitial = studentAccountInitial($student['full_name'] ?? '');
 
-syncEnrollmentsFromPaymentsForStudent($studentId);
-$enrolled = getEnrolledCoursesByStudentId($studentId);
-$courseIds = array_map(static fn($c) => (int) $c['id'], $enrolled);
-$progressMap = getCourseProgressForStudent($studentId, $courseIds);
-$certificates = getStudentCertificates($studentId);
-$certByCourse = [];
-foreach ($certificates as $cert) {
-    $certByCourse[(int) $cert['course_id']] = $cert;
-}
-$activeCourseCount = count(array_filter($enrolled, static fn($c) => ($c['status'] ?? 'active') !== 'pending'));
-$pendingCourseCount = count($enrolled) - $activeCourseCount;
-$studentBookings = getStudentBookings($studentId);
-$bookingsByCourse = [];
-foreach ($studentBookings as $bookingRow) {
-    $bookingsByCourse[(int) ($bookingRow['course_id'] ?? 0)] = $bookingRow;
+try {
+    syncEnrollmentsFromPaymentsForStudent($studentId);
+    $enrolled = getEnrolledCoursesByStudentId($studentId);
+    $courseIds = array_map(static fn($c) => (int) $c['id'], $enrolled);
+    $progressMap = getCourseProgressForStudent($studentId, $courseIds);
+    $certificates = getStudentCertificates($studentId);
+    $certByCourse = [];
+    foreach ($certificates as $cert) {
+        $certByCourse[(int) $cert['course_id']] = $cert;
+    }
+    $activeCourseCount = count(array_filter($enrolled, static fn($c) => ($c['status'] ?? 'active') !== 'pending'));
+    $pendingCourseCount = count($enrolled) - $activeCourseCount;
+    $studentBookings = getStudentBookings($studentId);
+    $bookingsByCourse = [];
+    foreach ($studentBookings as $bookingRow) {
+        $bookingsByCourse[(int) ($bookingRow['course_id'] ?? 0)] = $bookingRow;
+    }
+} catch (Throwable $e) {
+    $logDir = dirname(__DIR__) . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    file_put_contents($logDir . '/profile.log', date('Y-m-d H:i:s') . ' ' . $e->getMessage() . "\n", FILE_APPEND);
+    $enrolled = [];
+    $courseIds = [];
+    $progressMap = [];
+    $certificates = [];
+    $certByCourse = [];
+    $activeCourseCount = 0;
+    $pendingCourseCount = 0;
+    $studentBookings = [];
+    $bookingsByCourse = [];
+    if ($error === '') {
+        $error = 'โหลดข้อมูลบางส่วนไม่สำเร็จ — หากยังมีปัญหา กรุณาติดต่อทีมงาน';
+    }
 }
 
 $pageTitle = $accountTabs[$tab]['title'];

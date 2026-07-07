@@ -218,11 +218,15 @@ function findStudentIdByPhone(string $phone): ?int
 
 function studentHasLineLinked(int $studentId): bool
 {
-    $stmt = db()->prepare('SELECT line_user_id FROM students WHERE id = ? LIMIT 1');
-    $stmt->execute([$studentId]);
-    $lineUserId = trim((string) ($stmt->fetchColumn() ?: ''));
+    try {
+        $stmt = db()->prepare('SELECT line_user_id FROM students WHERE id = ? LIMIT 1');
+        $stmt->execute([$studentId]);
+        $lineUserId = trim((string) ($stmt->fetchColumn() ?: ''));
 
-    return $lineUserId !== '';
+        return $lineUserId !== '';
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 function lineOaGetBotProfile(): ?array

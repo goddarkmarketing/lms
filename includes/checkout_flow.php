@@ -230,16 +230,38 @@ function getEnrolledCoursesByPhone(string $phone): array
         return [];
     }
 
-    $stmt = db()->prepare('
-        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, c.course_type, e.status, e.enrolled_at
-        FROM enrollments e
-        JOIN students s ON s.id = e.student_id
-        JOIN courses c ON c.id = e.course_id
-        WHERE s.phone = ? AND e.status IN ("active", "completed")
-        ORDER BY e.enrolled_at DESC
-    ');
-    $stmt->execute([$phone]);
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare('
+            SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, c.course_type, e.status, e.enrolled_at
+            FROM enrollments e
+            JOIN students s ON s.id = e.student_id
+            JOIN courses c ON c.id = e.course_id
+            WHERE s.phone = ? AND e.status IN ("active", "completed")
+            ORDER BY e.enrolled_at DESC
+        ');
+        $stmt->execute([$phone]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        try {
+            $stmt = db()->prepare('
+                SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, e.status, e.enrolled_at
+                FROM enrollments e
+                JOIN students s ON s.id = e.student_id
+                JOIN courses c ON c.id = e.course_id
+                WHERE s.phone = ? AND e.status IN ("active", "completed")
+                ORDER BY e.enrolled_at DESC
+            ');
+            $stmt->execute([$phone]);
+            $rows = $stmt->fetchAll();
+            foreach ($rows as &$row) {
+                $row['course_type'] = 'recorded';
+            }
+            unset($row);
+            return $rows;
+        } catch (Throwable $e2) {
+            return [];
+        }
+    }
 }
 
 function getEnrolledCoursesByStudentId(int $studentId): array
@@ -247,15 +269,36 @@ function getEnrolledCoursesByStudentId(int $studentId): array
     if ($studentId <= 0) {
         return [];
     }
-    $stmt = db()->prepare('
-        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, c.course_type, e.status, e.enrolled_at
-        FROM enrollments e
-        JOIN courses c ON c.id = e.course_id
-        WHERE e.student_id = ? AND e.status IN ("pending", "active", "completed")
-        ORDER BY e.enrolled_at DESC
-    ');
-    $stmt->execute([$studentId]);
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare('
+            SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, c.course_type, e.status, e.enrolled_at
+            FROM enrollments e
+            JOIN courses c ON c.id = e.course_id
+            WHERE e.student_id = ? AND e.status IN ("pending", "active", "completed")
+            ORDER BY e.enrolled_at DESC
+        ');
+        $stmt->execute([$studentId]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        try {
+            $stmt = db()->prepare('
+                SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, e.status, e.enrolled_at
+                FROM enrollments e
+                JOIN courses c ON c.id = e.course_id
+                WHERE e.student_id = ? AND e.status IN ("pending", "active", "completed")
+                ORDER BY e.enrolled_at DESC
+            ');
+            $stmt->execute([$studentId]);
+            $rows = $stmt->fetchAll();
+            foreach ($rows as &$row) {
+                $row['course_type'] = 'recorded';
+            }
+            unset($row);
+            return $rows;
+        } catch (Throwable $e2) {
+            return [];
+        }
+    }
 }
 
 function getFirstLessonIdForCourse(int $courseId): ?int
