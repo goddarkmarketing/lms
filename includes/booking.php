@@ -339,15 +339,16 @@ function createBookingsForPayment(int $paymentId, int $studentId, array $session
     if (!$sessionMap) {
         return;
     }
-
     try {
         foreach ($sessionMap as $sessionId) {
             createSessionBooking((int) $sessionId, $studentId, $paymentId, $status);
         }
     } catch (Throwable $e) {
-        if (function_exists('checkoutLog')) {
-            checkoutLog('createBookingsForPayment: ' . $e->getMessage());
+        $logDir = BASE_PATH . '/storage/logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
         }
+        file_put_contents($logDir . '/payment.log', date('Y-m-d H:i:s') . ' booking: ' . $e->getMessage() . "\n", FILE_APPEND);
     }
 }
 

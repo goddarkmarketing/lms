@@ -187,9 +187,7 @@ function getPaymentCourseTitles(int $paymentId): array
             return $titles;
         }
     } catch (Throwable $e) {
-        if (function_exists('checkoutLog')) {
-            checkoutLog('getPaymentCourseTitles: ' . $e->getMessage());
-        }
+        // payment_items may be missing on older databases
     }
 
     return [];

@@ -64,12 +64,7 @@ if (!empty($_FILES['slip_image']['name'])) {
     $slipPath = $uploaded;
 }
 
-$pdo = db();
-$paymentId = 0;
-
 try {
-    $pdo->beginTransaction();
-
     $paymentId = insertBankTransferPayment(
         $courseId ?: null,
         $name,
@@ -82,15 +77,33 @@ try {
         $note ?: null,
         $couponCode
     );
-
     savePaymentItems($paymentId, $items);
 
     if ($couponCode) {
         try {
             incrementCouponUsage($couponCode);
         } catch (Throwable $e) {
-            checkoutLog('incrementCouponUsage: ' . $e->getMessage());
+            // non-blocking
         }
+    }
+
+    $paymentRow = [
+        'id' => $paymentId,
+        'student_name' => $name,
+        'student_email' => $email,
+        'student_phone' => $phone,
+        'amount' => $amount,
+        'course_title' => count($items) === 1 ? ($items[0]['title'] ?? '') : cartTitlesSummary(),
+    ];
+    try {
+        notifyPaymentReceived($paymentRow);
+    } catch (Throwable $e) {
+        // non-blocking
+    }
+    try {
+        lineNotifyPayment($paymentRow);
+    } catch (Throwable $e) {
+        // non-blocking
     }
 
     $courseIds = getCourseIdsFromCartItems($items);
@@ -103,34 +116,16 @@ try {
         }
     }
 
-    $pdo->commit();
+    $_SESSION['checkout_phone'] = $phone;
+    flash('payment_success', 'แจ้งชำระเงินเรียบร้อยแล้ว ทีมงานจะตรวจสอบและติดต่อกลับโดยเร็ว');
+    clearCart();
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
+    $logDir = dirname(__DIR__) . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
     }
-    checkoutLog('payment.php: ' . $e->getMessage());
+    file_put_contents($logDir . '/payment.log', date('Y-m-d H:i:s') . ' ' . $e->getMessage() . "\n", FILE_APPEND);
     flash('payment_error', 'เกิดข้อผิดพลาด กรุณาลองใหม่หรือติดต่อทีมงาน');
-    redirect('/public/checkout.php');
 }
-
-$paymentRow = [
-    'id' => $paymentId,
-    'student_name' => $name,
-    'student_email' => $email,
-    'student_phone' => $phone,
-    'amount' => $amount,
-    'course_title' => count($items) === 1 ? ($items[0]['title'] ?? '') : cartTitlesSummary(),
-];
-
-try {
-    notifyPaymentReceived($paymentRow);
-    lineNotifyPayment($paymentRow);
-} catch (Throwable $e) {
-    checkoutLog('payment notify: ' . $e->getMessage());
-}
-
-$_SESSION['checkout_phone'] = $phone;
-flash('payment_success', 'แจ้งชำระเงินเรียบร้อยแล้ว ทีมงานจะตรวจสอบและติดต่อกลับโดยเร็ว');
-clearCart();
 
 redirect('/public/checkout.php');

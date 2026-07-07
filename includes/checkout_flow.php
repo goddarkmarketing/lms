@@ -67,13 +67,53 @@ function requireCartForCheckout(): void
     redirect('/public/courses.php');
 }
 
-function checkoutLog(string $message): void
+function appendCartIdsToNote(string $note): string
 {
-    $logDir = dirname(__DIR__) . '/storage/logs';
-    if (!is_dir($logDir)) {
-        @mkdir($logDir, 0755, true);
+    $ids = getCartCourseIds();
+    if (!$ids) {
+        return $note;
     }
-    file_put_contents($logDir . '/payment.log', date('Y-m-d H:i:s') . ' ' . $message . "\n", FILE_APPEND);
+    $meta = 'cart_ids:' . implode(',', $ids);
+    if ($note !== '' && str_contains($note, 'cart_ids:')) {
+        return $note;
+    }
+    return $note !== '' ? $note . "\n" . $meta : $meta;
+}
+
+function parseCartIdsFromNote(?string $note): array
+{
+    if (!$note || !preg_match('/cart_ids:([\d,]+)/', $note, $m)) {
+        return [];
+    }
+    return array_values(array_filter(array_map('intval', explode(',', $m[1]))));
+}
+
+function savePaymentItems(int $paymentId, array $cartItems): void
+{
+    if ($paymentId <= 0 || !$cartItems) {
+        return;
+    }
+    try {
+        require_once __DIR__ . '/booking.php';
+        $sessionMap = getCartSessionMap();
+
+        $stmt = db()->prepare('INSERT INTO payment_items (payment_id, course_id, session_id, amount) VALUES (?, ?, ?, ?)');
+        foreach ($cartItems as $item) {
+            $courseId = (int) ($item['id'] ?? 0);
+            if ($courseId <= 0) {
+                continue;
+            }
+            $sessionId = $sessionMap[$courseId] ?? null;
+            try {
+                $stmt->execute([$paymentId, $courseId, $sessionId ?: null, (float) ($item['price'] ?? 0)]);
+            } catch (Throwable $e) {
+                $fallback = db()->prepare('INSERT INTO payment_items (payment_id, course_id, amount) VALUES (?, ?, ?)');
+                $fallback->execute([$paymentId, $courseId, (float) ($item['price'] ?? 0)]);
+            }
+        }
+    } catch (Throwable $e) {
+        // payment_items table may be missing on older databases; cart_ids in note still identify courses.
+    }
 }
 
 function insertBankTransferPayment(
@@ -106,65 +146,14 @@ function insertBankTransferPayment(
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
         ');
         $stmt->execute([...$baseParams, $couponCode]);
+        return (int) db()->lastInsertId();
     } catch (Throwable $e) {
-        checkoutLog('insert payment without coupon_code: ' . $e->getMessage());
         $stmt = db()->prepare('
             INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
         ');
         $stmt->execute($baseParams);
-    }
-
-    return (int) db()->lastInsertId();
-}
-
-function appendCartIdsToNote(string $note): string
-{
-    $ids = getCartCourseIds();
-    if (!$ids) {
-        return $note;
-    }
-    $meta = 'cart_ids:' . implode(',', $ids);
-    if ($note !== '' && str_contains($note, 'cart_ids:')) {
-        return $note;
-    }
-    return $note !== '' ? $note . "\n" . $meta : $meta;
-}
-
-function parseCartIdsFromNote(?string $note): array
-{
-    if (!$note || !preg_match('/cart_ids:([\d,]+)/', $note, $m)) {
-        return [];
-    }
-    return array_values(array_filter(array_map('intval', explode(',', $m[1]))));
-}
-
-function savePaymentItems(int $paymentId, array $cartItems): void
-{
-    if ($paymentId <= 0 || !$cartItems) {
-        return;
-    }
-
-    try {
-        require_once __DIR__ . '/booking.php';
-        $sessionMap = getCartSessionMap();
-
-        $stmt = db()->prepare('INSERT INTO payment_items (payment_id, course_id, session_id, amount) VALUES (?, ?, ?, ?)');
-        foreach ($cartItems as $item) {
-            $courseId = (int) ($item['id'] ?? 0);
-            if ($courseId <= 0) {
-                continue;
-            }
-            $sessionId = $sessionMap[$courseId] ?? null;
-            try {
-                $stmt->execute([$paymentId, $courseId, $sessionId ?: null, (float) ($item['price'] ?? 0)]);
-            } catch (Throwable $e) {
-                $fallback = db()->prepare('INSERT INTO payment_items (payment_id, course_id, amount) VALUES (?, ?, ?)');
-                $fallback->execute([$paymentId, $courseId, (float) ($item['price'] ?? 0)]);
-            }
-        }
-    } catch (Throwable $e) {
-        checkoutLog('savePaymentItems: ' . $e->getMessage());
+        return (int) db()->lastInsertId();
     }
 }
 
