@@ -510,23 +510,28 @@ function bookingStatusBadgeClass(string $status): string
 
 function formatPaymentSessionSummary(?string $note, ?int $paymentId = null): string
 {
+    return formatPaymentSessionTimeLabel($note, $paymentId);
+}
+
+function formatPaymentSessionTimeLabel(?string $note, ?int $paymentId = null): string
+{
     $lines = [];
     $map = parseSessionMapFromNote($note);
     foreach ($map as $sessionId) {
         $session = getSessionById((int) $sessionId);
         if ($session) {
-            $lines[] = ($session['course_title'] ?? 'คอร์ส') . ' · ' . formatSessionRange($session);
+            $lines[] = formatSessionRange($session);
         }
     }
     if ($lines) {
-        return implode(' | ', $lines);
+        return implode(' · ', $lines);
     }
     if ($paymentId) {
         foreach (getBookingsByPaymentId($paymentId) as $booking) {
-            $lines[] = ($booking['course_title'] ?? '') . ' · ' . formatSessionRange($booking);
+            $lines[] = formatSessionRange($booking);
         }
     }
-    return $lines ? implode(' | ', $lines) : '';
+    return $lines ? implode(' · ', $lines) : '';
 }
 
 function getBookingsByPaymentId(int $paymentId): array

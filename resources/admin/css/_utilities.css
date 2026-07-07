@@ -98,85 +98,49 @@
     @apply mb-4;
   }
 
-  .payments-table .payments-table-row td {
-    @apply align-middle;
+  .payments-table--compact .payments-table-row td {
+    @apply max-h-12 align-middle py-2.5;
     vertical-align: middle;
   }
 
-  .payment-course-list {
-    @apply m-0 list-none p-0 text-sm;
-  }
-
-  .payment-course-list li + li {
-    @apply mt-1;
-  }
-
-  .payments-table .payment-date {
+  .payments-table--compact .payment-date {
     @apply whitespace-nowrap text-[0.84rem];
     color: var(--color-text-muted);
   }
 
-  .payments-table .payment-payer {
-    @apply min-w-[11rem] max-w-[14rem];
+  .payments-table--compact .payment-payer,
+  .payments-table--compact .payment-courses {
+    @apply max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap text-sm;
   }
 
-  .payments-table .payment-payer strong {
-    @apply block font-semibold leading-snug;
-    color: var(--color-text-heading);
+  .payments-table--compact .payment-courses {
+    @apply max-w-[22rem];
   }
 
-  .payments-table .payment-payer-phone {
-    @apply mt-0.5 block text-sm font-medium;
-    color: var(--color-text-heading);
-  }
-
-  .payments-table .payment-payer-email {
-    @apply mt-0.5 block break-all text-xs;
-    color: var(--color-text-muted);
-  }
-
-  .payments-table .payment-courses {
-    @apply min-w-[10rem] max-w-[18rem] text-sm leading-snug;
-  }
-
-  .payments-table .payment-session {
-    @apply min-w-[8rem] text-sm;
-  }
-
-  .payments-table .payment-session-link {
-    @apply mt-1.5;
-  }
-
-  .payments-table .col-amount,
-  .payments-table .payment-amount {
+  .payments-table--compact .payment-amount {
     @apply whitespace-nowrap font-bold;
     color: var(--color-text-heading);
   }
 
-  .payments-table .col-slip,
-  .payments-table .payment-status {
-    @apply whitespace-nowrap text-center;
-  }
-
-  .payments-table .actions {
+  .payments-table--compact .payment-actions-cell {
     @apply whitespace-nowrap text-right;
   }
 
-  .payment-slip-btn {
-    @apply min-w-[5.5rem];
+  .payments-table--compact .payment-actions-cell .badge {
+    @apply mx-1 align-middle;
   }
 
-  .payment-slip-missing {
-    color: var(--color-text-muted);
+  .payment-slip-btn {
+    @apply min-w-0 px-2.5;
   }
 
   .payment-action-form {
-    @apply inline-flex flex-row flex-nowrap items-center justify-end;
-    gap: 0.4rem;
+    @apply ml-1 inline-flex flex-row flex-nowrap items-center justify-end align-middle;
+    gap: 0.35rem;
   }
 
-  .payment-action-done {
-    @apply text-gray-400;
+  .payment-action-form .btn-sm {
+    @apply px-2.5 py-1 text-xs;
   }
 
   /* ── Content CMS ── */

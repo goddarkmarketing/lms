@@ -244,6 +244,31 @@ function getPendingEnrollmentsForAdmin(): array
     }
 }
 
+function formatPaymentCustomerLine(array $payment): string
+{
+    $name = trim((string) ($payment['student_name'] ?? ''));
+    $phone = trim((string) ($payment['student_phone'] ?? ''));
+    if ($name !== '' && $phone !== '') {
+        return $name . ' · ' . $phone;
+    }
+    return $name !== '' ? $name : $phone;
+}
+
+function formatPaymentCourseLine(array $payment, array $items = []): string
+{
+    $titles = [];
+    foreach ($items as $item) {
+        $title = trim((string) ($item['title'] ?? ''));
+        if ($title !== '') {
+            $titles[] = $title;
+        }
+    }
+    if (!$titles && !empty($payment['course_title'])) {
+        $titles[] = (string) $payment['course_title'];
+    }
+    return $titles ? implode(', ', $titles) : '-';
+}
+
 function rejectDuplicatePendingPayments(array $verifiedPayment, int $verifiedPaymentId): void
 {
     $phone = trim((string) ($verifiedPayment['student_phone'] ?? ''));

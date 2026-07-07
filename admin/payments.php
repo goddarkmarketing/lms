@@ -108,16 +108,13 @@ $statusLabels = [
     <div class="admin-card-body is-flush">
         <?php if ($payments): ?>
         <div class="table-responsive">
-        <table class="admin-table payments-table">
+        <table class="admin-table payments-table payments-table--compact">
             <thead>
                 <tr>
                     <th>วันที่</th>
                     <th>ลูกค้า</th>
                     <th>คอร์ส</th>
-                    <th>รอบเรียน Live</th>
                     <th class="col-amount">จำนวน</th>
-                    <th class="col-slip">สลิป</th>
-                    <th>สถานะ</th>
                     <th class="actions">จัดการ</th>
                 </tr>
             </thead>
@@ -126,8 +123,13 @@ $statusLabels = [
                 <?php
                     $items = $paymentItemsMap[(int) $p['id']] ?? [];
                     $paymentStatus = (string) ($p['status'] ?? 'pending');
-                    $sessionSummary = formatPaymentSessionSummary($p['note'] ?? null, (int) $p['id']);
-                    $paymentBookings = getBookingsByPaymentId((int) $p['id']);
+                    $sessionTime = formatPaymentSessionTimeLabel($p['note'] ?? null, (int) $p['id']);
+                    $courseLine = formatPaymentCourseLine($p, $items);
+                    if ($sessionTime !== '') {
+                        $courseLine .= ' (' . $sessionTime . ')';
+                    }
+                    $customerLine = formatPaymentCustomerLine($p);
+                    $customerTitle = trim((string) ($p['student_email'] ?? ''));
                     $slipFilename = (string) ($p['slip_image'] ?? '');
                     $slipUrl = $slipFilename !== ''
                         ? APP_URL . '/public/view_slip.php?id=' . (int) $p['id']
@@ -137,57 +139,23 @@ $statusLabels = [
                 ?>
                 <tr id="payment-<?= (int) $p['id'] ?>" class="payments-table-row">
                     <td class="payment-date"><?= e(date('d/m/Y H:i', strtotime($p['created_at']))) ?></td>
-                    <td class="payment-payer">
-                        <strong><?= e($p['student_name']) ?></strong>
-                        <?php if (!empty($p['student_phone'])): ?>
-                            <span class="payment-payer-phone"><?= e($p['student_phone']) ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($p['student_email'])): ?>
-                            <span class="payment-payer-email"><?= e($p['student_email']) ?></span>
-                        <?php endif; ?>
+                    <td class="payment-payer"<?= $customerTitle !== '' ? ' title="' . e($customerTitle) . '"' : '' ?>>
+                        <?= e($customerLine) ?>
                     </td>
-                    <td class="payment-courses">
-                        <?php if ($items): ?>
-                            <?php if (count($items) === 1): ?>
-                                <?= e($items[0]['title']) ?>
-                            <?php else: ?>
-                            <ul class="payment-course-list">
-                                <?php foreach ($items as $item): ?>
-                                <li><?= e($item['title']) ?></li>
-                                <?php endforeach; ?>
-                            </ul>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <?= e($p['course_title'] ?? '-') ?>
-                        <?php endif; ?>
-                    </td>
-                    <td class="payment-session">
-                        <?php if ($sessionSummary): ?>
-                            <span><?= e($sessionSummary) ?></span>
-                            <?php if ($paymentBookings): ?>
-                            <a href="<?= APP_URL ?>/admin/bookings.php" class="btn btn-outline btn-sm payment-session-link">ดูการจอง</a>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <span class="payment-slip-missing">—</span>
-                        <?php endif; ?>
-                    </td>
+                    <td class="payment-courses" title="<?= e($courseLine) ?>"><?= e($courseLine) ?></td>
                     <td class="payment-amount"><?= e(formatPrice((float) $p['amount'])) ?></td>
-                    <td class="col-slip">
+                    <td class="actions payment-actions-cell">
                         <?php if ($slipUrl !== ''): ?>
-                            <button
-                                type="button"
-                                class="btn btn-outline btn-sm payment-slip-btn"
-                                data-open-slip
-                                data-slip-url="<?= e($slipUrl) ?>"
-                                data-slip-image="<?= $slipIsImage ? '1' : '0' ?>"
-                                data-slip-payer="<?= e($p['student_name']) ?>"
-                            >ดูสลิป</button>
-                        <?php else: ?>
-                            <span class="payment-slip-missing">—</span>
+                        <button
+                            type="button"
+                            class="btn btn-outline btn-sm payment-slip-btn"
+                            data-open-slip
+                            data-slip-url="<?= e($slipUrl) ?>"
+                            data-slip-image="<?= $slipIsImage ? '1' : '0' ?>"
+                            data-slip-payer="<?= e($p['student_name']) ?>"
+                        >สลิป</button>
                         <?php endif; ?>
-                    </td>
-                    <td class="payment-status"><span class="badge badge-<?= e($paymentStatus) ?>"><?= e($statusLabels[$paymentStatus] ?? $paymentStatus) ?></span></td>
-                    <td class="actions">
+                        <span class="badge badge-<?= e($paymentStatus) ?>"><?= e($statusLabels[$paymentStatus] ?? $paymentStatus) ?></span>
                         <?php if ($paymentStatus === 'pending'): ?>
                         <form method="post" class="payment-action-form table-actions">
                             <?= csrfField() ?>
@@ -201,8 +169,6 @@ $statusLabels = [
                             <input type="hidden" name="payment_id" value="<?= (int) $p['id'] ?>">
                             <button type="submit" name="status" value="verified" class="btn btn-primary btn-sm">ยืนยัน</button>
                         </form>
-                        <?php else: ?>
-                        <span class="payment-action-done">—</span>
                         <?php endif; ?>
                     </td>
                 </tr>
