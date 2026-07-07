@@ -12,6 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 verifyCsrf();
 
+persistLineOaSettingsFromPost($_POST);
+
 $action = $_POST['line_test_action'] ?? '';
 
 if ($action === 'bot_info') {

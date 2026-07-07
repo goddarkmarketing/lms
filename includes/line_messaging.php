@@ -25,6 +25,44 @@ function lineOaChannelToken(): string
     return trim(getSetting('line_oa_channel_token', ''));
 }
 
+function lineOaHasChannelSecret(): bool
+{
+    return lineOaChannelSecret() !== '';
+}
+
+function lineOaHasChannelToken(): bool
+{
+    return lineOaChannelToken() !== '';
+}
+
+/**
+ * Save LINE OA credentials from admin form without clearing when fields are left blank.
+ */
+function persistLineOaSettingsFromPost(array $post, bool $updateEnabled = true): void
+{
+    $stmt = db()->prepare('
+        INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+    ');
+
+    foreach (['line_oa_channel_secret', 'line_oa_channel_token'] as $key) {
+        $value = trim((string) ($post[$key] ?? ''));
+        if ($value !== '') {
+            $stmt->execute([$key, $value]);
+        }
+    }
+
+    if (array_key_exists('line_oa_basic_id', $post)) {
+        $stmt->execute(['line_oa_basic_id', trim((string) $post['line_oa_basic_id'])]);
+    }
+
+    if ($updateEnabled) {
+        $stmt->execute(['line_oa_enabled', isset($post['line_oa_enabled']) ? '1' : '0']);
+    }
+
+    resetSettingsCache();
+}
+
 function lineOaPublicBaseUrl(): string
 {
     if (!empty($_SERVER['HTTP_HOST'])) {

@@ -18,33 +18,33 @@ $keys = [
     'instructor_photo', 'instructor_credentials', 'instructor_highlights',
     'instructor_stat_students', 'instructor_stat_satisfaction',
     'omise_enabled', 'omise_public_key', 'omise_secret_key',
-    'line_oa_enabled', 'line_oa_channel_secret', 'line_oa_channel_token', 'line_oa_basic_id',
     'payment_gateway_note',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
+    require_once dirname(__DIR__) . '/includes/line_messaging.php';
     try {
         $stmt = db()->prepare('
             INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)
             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
         ');
         foreach ($keys as $key) {
-            if (in_array($key, ['email_enabled', 'line_notify_enabled', 'promptpay_enabled', 'certificate_require_quiz', 'omise_enabled', 'line_oa_enabled'], true)) {
+            if (in_array($key, ['email_enabled', 'line_notify_enabled', 'promptpay_enabled', 'certificate_require_quiz', 'omise_enabled'], true)) {
                 $value = isset($_POST[$key]) ? '1' : '0';
-            } elseif (in_array($key, ['smtp_pass', 'omise_secret_key', 'line_oa_channel_secret', 'line_oa_channel_token'], true) && trim($_POST[$key] ?? '') === '') {
+            } elseif (in_array($key, ['smtp_pass', 'omise_secret_key'], true) && trim($_POST[$key] ?? '') === '') {
                 continue;
             } else {
                 $value = trim($_POST[$key] ?? '');
             }
             $stmt->execute([$key, $value]);
         }
+        persistLineOaSettingsFromPost($_POST);
         flash('admin_success', 'บันทึกการตั้งค่าเรียบร้อย');
     } catch (Throwable $e) {
         flash('admin_error', 'เกิดข้อผิดพลาด');
     }
-    resetSettingsCache();
-    redirect('/admin/settings.php');
+    redirect('/admin/settings.php#line-oa');
 }
 
 $pageTitle = 'ตั้งค่าเว็บไซต์';
@@ -358,11 +358,17 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
             <div class="form-row">
                 <div class="form-group">
                     <label class="admin-settings-label-with-icon"><?= lucide_icon('shield', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Secret</label>
-                    <input type="password" name="line_oa_channel_secret" class="form-control" placeholder="<?= ($settings['line_oa_channel_secret'] ?? '') !== '' ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Basic settings' ?>" autocomplete="new-password">
+                    <input type="password" name="line_oa_channel_secret" class="form-control" placeholder="<?= lineOaHasChannelSecret() ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Basic settings' ?>" autocomplete="new-password">
+                    <?php if (lineOaHasChannelSecret()): ?>
+                    <small class="form-hint admin-line-credential-saved">บันทึกแล้ว — ช่องนี้จะว่างเพื่อความปลอดภัย ว่างไว้เพื่อคงค่าเดิม</small>
+                    <?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label class="admin-settings-label-with-icon"><?= lucide_icon('lock', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Access Token</label>
-                    <input type="password" name="line_oa_channel_token" class="form-control" placeholder="<?= ($settings['line_oa_channel_token'] ?? '') !== '' ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Messaging API' ?>" autocomplete="new-password">
+                    <input type="password" name="line_oa_channel_token" class="form-control" placeholder="<?= lineOaHasChannelToken() ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Messaging API' ?>" autocomplete="new-password">
+                    <?php if (lineOaHasChannelToken()): ?>
+                    <small class="form-hint admin-line-credential-saved">บันทึกแล้ว — ช่องนี้จะว่างเพื่อความปลอดภัย ว่างไว้เพื่อคงค่าเดิม</small>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="form-group">
@@ -376,6 +382,16 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
                 <a href="<?= e(lineOaAddFriendUrl()) ?>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">เปิดหน้าเพิ่มเพื่อน</a>
                 <?php endif; ?>
             </div>
+            <?php if (lineOaHasChannelSecret() || lineOaHasChannelToken()): ?>
+            <ul class="admin-line-credential-status">
+                <li class="<?= lineOaHasChannelSecret() ? 'is-saved' : 'is-missing' ?>">
+                    Channel Secret: <?= lineOaHasChannelSecret() ? 'บันทึกแล้ว' : 'ยังไม่ได้ตั้ง' ?>
+                </li>
+                <li class="<?= lineOaHasChannelToken() ? 'is-saved' : 'is-missing' ?>">
+                    Access Token: <?= lineOaHasChannelToken() ? 'บันทึกแล้ว' : 'ยังไม่ได้ตั้ง' ?>
+                </li>
+            </ul>
+            <?php endif; ?>
             <?php if (isLineOaWebhookReady()): ?>
             <?php
                 $secretLen = strlen(lineOaChannelSecret());
@@ -463,9 +479,7 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
             </div>
 
             <div class="admin-form-actions">
-            <div class="admin-form-actions">
                 <button type="submit" class="btn btn-primary">บันทึกการตั้งค่า</button>
-            </div>
             </div>
         </form>
     </div>
