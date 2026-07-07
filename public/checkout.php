@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/functions.php';
 require_once dirname(__DIR__) . '/includes/cart.php';
 require_once dirname(__DIR__) . '/includes/checkout_flow.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
 require_once dirname(__DIR__) . '/includes/student_auth.php';
 require_once dirname(__DIR__) . '/includes/coupon.php';
 require_once dirname(__DIR__) . '/includes/promptpay.php';
@@ -29,6 +30,7 @@ $pageTitle = 'ชำระเงิน';
 require_once dirname(__DIR__) . '/includes/header.php';
 
 $orderItems = cartItems();
+$cartSessionDetails = getCartSessionDetails();
 $preselectAmount = (string) (cartTotal() ?: '');
 $cartNotePrefill = cartCount() > 0 ? 'คอร์สในตะกร้า: ' . cartTitlesSummary() : '';
 $preselectCourseId = count($orderItems) === 1 ? (int) ($orderItems[0]['id'] ?? 0) : 0;
@@ -44,8 +46,9 @@ $bankNumberDisplay = strlen($bankDigits) === 10
     : $bankNumber;
 $checkoutStep = $paymentSuccess ? 4 : 3;
 $promptPay = getCheckoutPromptPayData($orderTotal);
-$omiseEnabled = isOmiseEnabled();
+$omiseEnabled = isOmiseCheckoutVisible();
 $omisePublicKey = omisePublicKey();
+$omiseReady = isOmiseEnabled();
 ?>
 
 <main class="checkout-page">
@@ -78,174 +81,200 @@ $omisePublicKey = omisePublicKey();
                     <h1>ชำระเงินซื้อคอร์สเรียน</h1>
                 </header>
 
-                <section class="checkout-panel">
-                    <div class="checkout-method is-active">
-                        <div class="checkout-method-head">
-                            <span class="checkout-method-radio" aria-hidden="true"></span>
-                            <div>
-                                <h2>ชำระเงินโดยการโอนเงินผ่านธนาคาร</h2>
-                                <p>โอนเงินตามยอดด้านล่าง แล้วแนบสลิปเพื่อยืนยันการชำระเงิน</p>
+                <section class="checkout-panel checkout-panel--pay-hub">
+                    <div class="checkout-pay-hub">
+                        <div class="checkout-pay-picker">
+                            <h2 class="checkout-pay-picker-title">ช่องทางการชำระเงิน</h2>
+                            <div class="checkout-pay-options" role="radiogroup" aria-label="ช่องทางการชำระเงิน">
+                                <button type="button" class="checkout-pay-option" data-checkout-method="transfer" role="radio" aria-checked="false">
+                                    <span class="checkout-pay-option-badge">แนะนำ</span>
+                                    <span class="checkout-pay-option-radio" aria-hidden="true"></span>
+                                    <span class="checkout-pay-option-icon checkout-pay-option-icon--bank" aria-hidden="true">
+                                        <?= lucide_icon('landmark', ['size' => 26, 'stroke' => '1.75']) ?>
+                                    </span>
+                                    <span class="checkout-pay-option-body">
+                                        <strong class="checkout-pay-option-title">โอนเงินผ่านธนาคาร</strong>
+                                        <span class="checkout-pay-option-desc">ชำระผ่านแอปธนาคาร หรือ Internet Banking</span>
+                                    </span>
+                                    <span class="checkout-pay-option-check" aria-hidden="true"><?= lucide_icon('circle-check', ['size' => 22]) ?></span>
+                                </button>
+
+                                <?php if ($omiseEnabled): ?>
+                                <button type="button" class="checkout-pay-option" data-checkout-method="card" role="radio" aria-checked="false">
+                                    <span class="checkout-pay-option-radio" aria-hidden="true"></span>
+                                    <span class="checkout-pay-option-icon checkout-pay-option-icon--card" aria-hidden="true">
+                                        <?= lucide_icon('credit-card', ['size' => 26, 'stroke' => '1.75']) ?>
+                                    </span>
+                                    <span class="checkout-pay-option-body">
+                                        <strong class="checkout-pay-option-title">ชำระด้วยบัตรเครดิต/เดบิต</strong>
+                                        <span class="checkout-pay-option-desc">ชำระเงินด้วยบัตรเครดิต หรือบัตรเดบิต</span>
+                                    </span>
+                                    <span class="checkout-pay-option-brands" aria-hidden="true">
+                                        <img src="<?= e(imageAsset('images/checkout/cards/card-brands.png')) ?>" alt="Visa, Mastercard, JCB, UnionPay" class="checkout-card-brands-img" width="220" height="32" loading="lazy" decoding="async">
+                                    </span>
+                                    <span class="checkout-pay-option-check" aria-hidden="true"><?= lucide_icon('circle-check', ['size' => 22]) ?></span>
+                                </button>
+                                <?php endif; ?>
                             </div>
                         </div>
 
-                        <div class="checkout-transfer-panel">
-                            <div class="checkout-bank-card<?= $promptPay ? ' checkout-bank-card--with-qr' : '' ?>">
-                                <div class="checkout-bank-card-body">
-                                    <div class="checkout-bank-card-info">
-                                        <div class="checkout-bank-card-top">
-                                            <img src="<?= e(imageAsset('images/checkout/kbank-logo.png', 'images/checkout/kbank-logo.svg')) ?>" alt="โลโก้<?= e($bankName) ?>" class="checkout-bank-logo" width="52" height="52" loading="lazy" decoding="async">
-                                            <div class="checkout-bank-card-brand">
-                                                <span class="checkout-bank-card-bank"><?= e($bankName) ?></span>
-                                            </div>
+                        <div class="checkout-pay-detail" id="checkoutDetailTransfer" hidden>
+                            <div class="checkout-pay-detail-grid<?= $promptPay ? ' checkout-pay-detail-grid--with-qr' : '' ?>">
+                                <section class="checkout-pay-detail-bank" aria-labelledby="checkout-detail-bank-title">
+                                    <header class="checkout-pay-detail-bank-head">
+                                        <div class="checkout-pay-detail-bank-brand">
+                                            <img src="<?= e(imageAsset('images/checkout/kbank-logo.png', 'images/checkout/kbank-logo.svg')) ?>" alt="" class="checkout-pay-detail-bank-logo" width="36" height="36" loading="lazy" decoding="async">
+                                            <span>โอนผ่านธนาคาร <?= e($bankName) ?></span>
                                         </div>
-                                        <dl class="checkout-bank-details">
-                                            <div class="checkout-bank-detail-row">
-                                                <dt>ชื่อบัญชี</dt>
-                                                <dd><?= e($bankAccountName) ?></dd>
-                                            </div>
-                                            <div class="checkout-bank-detail-row checkout-bank-detail-row--account">
-                                                <dt>เลขที่บัญชี</dt>
-                                                <dd>
-                                                    <span class="checkout-bank-number" id="checkoutBankNumber"><?= e($bankNumberDisplay) ?></span>
-                                                    <button type="button" class="checkout-bank-copy js-copy-bank" data-copy="<?= e($bankDigits ?: $bankNumber) ?>" aria-label="คัดลอกเลขบัญชี">
-                                                        <?= lucide_icon('copy', ['size' => 16]) ?>
-                                                        <span class="checkout-bank-copy-label">คัดลอก</span>
-                                                    </button>
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                        <p class="checkout-bank-note">โอนจากแอป <?= e($bankName) ?> หรือธนาคารอื่นได้ทันที</p>
+                                    </header>
+                                    <h3 class="checkout-pay-detail-heading" id="checkout-detail-bank-title">ข้อมูลบัญชีผู้รับโอน</h3>
+                                    <dl class="checkout-pay-fields">
+                                        <div class="checkout-pay-field">
+                                            <dt>ชื่อบัญชี</dt>
+                                            <dd><?= e($bankAccountName) ?></dd>
+                                        </div>
+                                        <div class="checkout-pay-field checkout-pay-field--account">
+                                            <dt>เลขที่บัญชี</dt>
+                                            <dd>
+                                                <span class="checkout-pay-account-no" id="checkoutBankNumber"><?= e($bankNumberDisplay) ?></span>
+                                                <button type="button" class="checkout-bank-copy js-copy-bank" data-copy="<?= e($bankDigits ?: $bankNumber) ?>" aria-label="คัดลอกเลขบัญชี">
+                                                    <?= lucide_icon('copy', ['size' => 15]) ?>
+                                                    <span class="checkout-bank-copy-label">คัดลอก</span>
+                                                </button>
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                    <p class="checkout-pay-detail-note">โอนจากแอป <?= e($bankName) ?> หรือธนาคารอื่น แล้วแนบสลิปด้านล่าง</p>
+                                </section>
+
+                                <?php if ($promptPay): ?>
+                                <section class="checkout-pay-detail-qr" aria-label="สแกน PromptPay">
+                                    <div class="checkout-pay-detail-qr-head">
+                                        <h3 class="checkout-pay-detail-heading">สแกนเพื่อชำระเงิน</h3>
+                                        <img src="<?= e(imageAsset('images/checkout/promptpay-logo.png')) ?>" alt="PromptPay" class="checkout-pay-pp-logo" width="120" height="34" loading="lazy">
+                                    </div>
+                                    <div class="checkout-pay-qr-stage">
+                                        <div class="checkout-pay-qr-frame">
+                                            <img src="<?= e($promptPay['qr_url']) ?>" alt="PromptPay QR ยอด <?= e(formatPrice($orderTotal)) ?>" width="168" height="168" class="checkout-pay-qr-img" loading="lazy">
+                                        </div>
+                                    </div>
+                                    <dl class="checkout-pay-fields checkout-pay-fields--inline">
+                                        <div class="checkout-pay-field">
+                                            <dt><?= ($promptPay['target_type'] ?? 'phone') === 'national_id' ? 'เลขบัตร' : 'เบอร์พร้อมเพย์' ?></dt>
+                                            <dd><?= e($promptPay['target_display']) ?></dd>
+                                        </div>
+                                    </dl>
+                                </section>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="checkout-pay-slip-block">
+                                <h3 class="checkout-pay-detail-heading">แจ้งการโอนเงิน</h3>
+                                <ol class="checkout-instructions">
+                                    <li>โอนเงินตามยอดรวมในสรุปคำสั่งซื้อ</li>
+                                    <li>เก็บหลักฐานการโอน (สลิป) ไว้</li>
+                                    <li>กรอกข้อมูลและแนบสลิปด้านล่าง</li>
+                                    <li>รอทีมงานตรวจสอบและเปิดสิทธิ์เรียน (ภายใน 24 ชม.)</li>
+                                </ol>
+
+                                <?php if (getSetting('payment_note')): ?>
+                                <p class="checkout-note"><?= e(getSetting('payment_note')) ?></p>
+                                <?php endif; ?>
+
+                                <form action="<?= APP_URL ?>/public/payment.php" method="post" enctype="multipart/form-data" class="checkout-form" id="checkoutForm">
+                                    <?= csrfField() ?>
+                                    <div class="form-row checkout-form-row">
+                                        <div class="form-group">
+                                            <label for="student_name">ชื่อ-นามสกุล *</label>
+                                            <input type="text" id="student_name" name="student_name" class="form-control" required value="<?= e($checkoutStudent['full_name'] ?? '') ?>">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="student_phone">เบอร์โทร *</label>
+                                            <input type="tel" id="student_phone" name="student_phone" class="form-control" required value="<?= e($checkoutStudent['phone'] ?? '') ?>">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="student_email">อีเมล</label>
+                                        <input type="email" id="student_email" name="student_email" class="form-control" placeholder="สำหรับรับการยืนยัน" value="<?= e($checkoutStudent['email'] ?? '') ?>">
                                     </div>
 
-                                    <?php if ($promptPay): ?>
-                                    <div class="checkout-bank-qr">
-                                        <div class="checkout-bank-qr-wrap">
-                                            <img src="<?= e($promptPay['qr_url']) ?>" alt="PromptPay QR ยอด <?= e(formatPrice($orderTotal)) ?>" width="200" height="200" class="checkout-bank-qr-img" loading="lazy">
-                                        </div>
-                                        <p class="checkout-bank-qr-hint">เปิดแอปธนาคาร → สแกน QR → โอนตามยอด</p>
-                                    </div>
+                                    <input type="hidden" name="from_cart" value="1">
+                                    <?php if ($preselectCourseId > 0): ?>
+                                    <input type="hidden" name="course_id" value="<?= $preselectCourseId ?>">
                                     <?php endif; ?>
-                                </div>
+
+                                    <div class="form-row checkout-form-row">
+                                        <div class="form-group">
+                                            <label>จำนวนเงิน (บาท)</label>
+                                            <div class="form-control checkout-readonly"><?= e(formatPrice($orderTotal > 0 ? $orderTotal : null)) ?></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="transfer_date">วันที่โอน</label>
+                                            <input type="date" id="transfer_date" name="transfer_date" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="transfer_time">เวลาโอน</label>
+                                        <input type="text" id="transfer_time" name="transfer_time" class="form-control" placeholder="เช่น 14:30">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="slip_image">แนบสลิปการโอนเงิน</label>
+                                        <div class="checkout-slip-drop" id="slipDropZone">
+                                            <input type="file" id="slip_image" name="slip_image" accept="image/*,.pdf" class="checkout-slip-input">
+                                            <div class="checkout-slip-placeholder">
+                                                <?= lucide_icon('upload', ['size' => 32, 'stroke' => '1.5']) ?>
+                                                <p><strong>คลิกหรือลากไฟล์</strong> มาวางที่นี่</p>
+                                                <span>รองรับ JPG, PNG, PDF (ไม่เกิน 5MB)</span>
+                                            </div>
+                                            <p class="checkout-slip-filename" id="slipFileName" hidden></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="note">หมายเหตุเพิ่มเติม</label>
+                                        <textarea id="note" name="note" class="form-control" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"><?= e($cartNotePrefill) ?></textarea>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary btn-block checkout-submit">
+                                        <?= lucide_icon('lock', ['size' => 20]) ?>
+                                        ยืนยันการชำระเงิน
+                                    </button>
+                                </form>
                             </div>
                         </div>
 
-                        <ol class="checkout-instructions">
-                            <li>โอนเงินตามยอดรวมในสรุปคำสั่งซื้อ</li>
-                            <li>เก็บหลักฐานการโอน (สลิป) ไว้</li>
-                            <li>กรอกข้อมูลและแนบสลิปด้านล่าง</li>
-                            <li>รอทีมงานตรวจสอบและเปิดสิทธิ์เรียน (ภายใน 24 ชม.)</li>
-                        </ol>
-
-                        <?php if (getSetting('payment_note')): ?>
-                        <p class="checkout-note"><?= e(getSetting('payment_note')) ?></p>
-                        <?php endif; ?>
-
-                        <form action="<?= APP_URL ?>/public/payment.php" method="post" enctype="multipart/form-data" class="checkout-form" id="checkoutForm">
-                            <?= csrfField() ?>
-                            <div class="form-row checkout-form-row">
-                                <div class="form-group">
-                                    <label for="student_name">ชื่อ-นามสกุล *</label>
-                                    <input type="text" id="student_name" name="student_name" class="form-control" required value="<?= e($checkoutStudent['full_name'] ?? '') ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label for="student_phone">เบอร์โทร *</label>
-                                    <input type="tel" id="student_phone" name="student_phone" class="form-control" required value="<?= e($checkoutStudent['phone'] ?? '') ?>">
-                                </div>
+                        <?php if ($omiseEnabled): ?>
+                        <div class="checkout-pay-detail" id="checkoutDetailCard" hidden>
+                            <?php if (!$omiseReady): ?>
+                            <div class="alert alert-error checkout-alert checkout-omise-alert">
+                                โหมดตั้งค่า — เปิดใช้ Omise และใส่ Secret Key ในแอดมินก่อนชำระจริง
                             </div>
-                            <div class="form-group">
-                                <label for="student_email">อีเมล</label>
-                                <input type="email" id="student_email" name="student_email" class="form-control" placeholder="สำหรับรับการยืนยัน" value="<?= e($checkoutStudent['email'] ?? '') ?>">
-                            </div>
-
-                            <input type="hidden" name="from_cart" value="1">
-                            <?php if ($preselectCourseId > 0): ?>
-                            <input type="hidden" name="course_id" value="<?= $preselectCourseId ?>">
                             <?php endif; ?>
 
-                            <div class="form-row checkout-form-row">
-                                <div class="form-group">
-                                    <label>จำนวนเงิน (บาท)</label>
-                                    <div class="form-control checkout-readonly" id="checkoutTotalDisplay"><?= e(formatPrice($orderTotal > 0 ? $orderTotal : null)) ?></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="transfer_date">วันที่โอน</label>
-                                    <input type="date" id="transfer_date" name="transfer_date" class="form-control">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="transfer_time">เวลาโอน</label>
-                                <input type="text" id="transfer_time" name="transfer_time" class="form-control" placeholder="เช่น 14:30">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="slip_image">แนบสลิปการโอนเงิน</label>
-                                <div class="checkout-slip-drop" id="slipDropZone">
-                                    <input type="file" id="slip_image" name="slip_image" accept="image/*,.pdf" class="checkout-slip-input">
-                                    <div class="checkout-slip-placeholder">
-                                        <?= lucide_icon('upload', ['size' => 32, 'stroke' => '1.5']) ?>
-                                        <p><strong>คลิกหรือลากไฟล์</strong> มาวางที่นี่</p>
-                                        <span>รองรับ JPG, PNG, PDF (ไม่เกิน 5MB)</span>
+                            <form action="<?= APP_URL ?>/public/omise_pay.php" method="post" class="checkout-form checkout-omise-form" id="omiseCheckoutForm">
+                                <?= csrfField() ?>
+                                <div class="form-row checkout-form-row">
+                                    <div class="form-group">
+                                        <label>ชื่อ-นามสกุล *</label>
+                                        <input type="text" name="student_name" class="form-control" required value="<?= e($checkoutStudent['full_name'] ?? '') ?>">
                                     </div>
-                                    <p class="checkout-slip-filename" id="slipFileName" hidden></p>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="note">หมายเหตุเพิ่มเติม</label>
-                                <textarea id="note" name="note" class="form-control" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"><?= e($cartNotePrefill) ?></textarea>
-                            </div>
-
-                            <div class="checkout-secure-note">
-                                <?= lucide_icon('lock', ['size' => 18]) ?>
-                                <span>ข้อมูลของคุณปลอดภัย ทีมงาน Wenxin จะตรวจสอบและติดต่อกลับหลังได้รับหลักฐานการชำระเงิน</span>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-block checkout-submit">
-                                <?= lucide_icon('lock', ['size' => 20]) ?>
-                                ยืนยันการชำระเงิน
-                            </button>
-                        </form>
-                    </div>
-                </section>
-
-                <?php if ($omiseEnabled): ?>
-                <section class="checkout-panel" style="margin-top:1.5rem">
-                    <div class="checkout-method is-active">
-                        <div class="checkout-method-head">
-                            <span class="checkout-method-radio" aria-hidden="true"></span>
-                            <div>
-                                <h2>ชำระเงินออนไลน์ทันที</h2>
-                                <p>PromptPay หรือบัตรเครดิต/เดบิต — เปิดสิทธิ์เรียนอัตโนมัติทันทีที่ชำระสำเร็จ</p>
-                            </div>
-                        </div>
-
-                        <form action="<?= APP_URL ?>/public/omise_pay.php" method="post" class="checkout-form" id="omiseCheckoutForm">
-                            <?= csrfField() ?>
-                            <div class="form-row checkout-form-row">
-                                <div class="form-group">
-                                    <label>ชื่อ-นามสกุล *</label>
-                                    <input type="text" name="student_name" class="form-control" required value="<?= e($checkoutStudent['full_name'] ?? '') ?>">
+                                    <div class="form-group">
+                                        <label>เบอร์โทร *</label>
+                                        <input type="tel" name="student_phone" class="form-control" required value="<?= e($checkoutStudent['phone'] ?? '') ?>">
+                                    </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>เบอร์โทร *</label>
-                                    <input type="tel" name="student_phone" class="form-control" required value="<?= e($checkoutStudent['phone'] ?? '') ?>">
+                                    <label>อีเมล</label>
+                                    <input type="email" name="student_email" class="form-control" value="<?= e($checkoutStudent['email'] ?? '') ?>">
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label>อีเมล</label>
-                                <input type="email" name="student_email" class="form-control" value="<?= e($checkoutStudent['email'] ?? '') ?>">
-                            </div>
-                            <div class="form-group">
-                                <label>วิธีชำระ</label>
-                                <select name="omise_method" class="form-control" id="omiseMethod">
-                                    <option value="promptpay">PromptPay (สแกน QR)</option>
-                                    <option value="card">บัตรเครดิต / เดบิต</option>
-                                </select>
-                            </div>
-                            <div id="omiseCardFields" hidden>
+                                <input type="hidden" name="omise_method" value="card">
                                 <div class="form-group">
-                                    <label>หมายเลขบัตร</label>
-                                    <input type="text" id="omiseCardNumber" class="form-control" inputmode="numeric" autocomplete="cc-number" placeholder="4111 1111 1111 1111">
+                                    <label for="omiseCardNumber">หมายเลขบัตร</label>
+                                    <div class="checkout-card-input-wrap">
+                                        <span class="checkout-card-input-brand" id="omiseCardBrand" hidden aria-hidden="true"></span>
+                                        <input type="text" id="omiseCardNumber" class="form-control checkout-card-input" inputmode="numeric" autocomplete="cc-number" placeholder="4111 1111 1111 1111" maxlength="19" spellcheck="false">
+                                    </div>
                                 </div>
                                 <div class="form-row checkout-form-row">
                                     <div class="form-group">
@@ -265,16 +294,26 @@ $omisePublicKey = omisePublicKey();
                                     <label>ชื่อบนบัตร</label>
                                     <input type="text" id="omiseCardName" class="form-control" autocomplete="cc-name" placeholder="NAME ON CARD">
                                 </div>
+                                <input type="hidden" name="omise_token" id="omiseToken" value="">
+                                <button type="submit" class="btn btn-primary btn-block checkout-submit" id="omiseSubmitBtn"<?= $omiseReady ? '' : ' disabled' ?>>
+                                    ชำระเงิน <?= e(formatPrice($orderTotal)) ?>
+                                </button>
+                            </form>
+                        </div>
+                        <?php endif; ?>
+
+                        <footer class="checkout-pay-hub-foot">
+                            <div class="checkout-pay-hub-foot-item">
+                                <?= lucide_icon('shield-check', ['size' => 18]) ?>
+                                <span>ข้อมูลการชำระเงินของคุณได้รับการเข้ารหัสและปลอดภัยตามมาตรฐานสากล</span>
                             </div>
-                            <input type="hidden" name="omise_token" id="omiseToken" value="">
-                            <p class="checkout-summary-note" style="margin:1rem 0">ยอดชำระ <strong><?= e(formatPrice($orderTotal)) ?></strong></p>
-                            <button type="submit" class="btn btn-primary btn-block checkout-submit" id="omiseSubmitBtn">
-                                ชำระเงินออนไลน์ <?= e(formatPrice($orderTotal)) ?>
-                            </button>
-                        </form>
+                            <div class="checkout-pay-hub-foot-item checkout-pay-hub-foot-item--timer">
+                                <?= lucide_icon('clock', ['size' => 18]) ?>
+                                <span>กรุณาชำระเงินภายใน 24 ชั่วโมงหลังสร้างรายการ</span>
+                            </div>
+                        </footer>
                     </div>
                 </section>
-                <?php endif; ?>
             </div>
 
             <aside class="checkout-sidebar">
@@ -287,10 +326,14 @@ $omisePublicKey = omisePublicKey();
                     <?php if ($orderItems): ?>
                     <ul class="checkout-order-list">
                         <?php foreach ($orderItems as $item): ?>
+                        <?php $sess = $cartSessionDetails[(int) ($item['id'] ?? 0)] ?? null; ?>
                         <li class="checkout-order-item">
                             <img src="<?= e(courseCoverUrl($item)) ?>" alt="" class="checkout-order-thumb" width="56" height="56" loading="lazy">
                             <div class="checkout-order-meta">
                                 <strong><?= e($item['title']) ?></strong>
+                                <?php if ($sess): ?>
+                                <span style="display:block;font-size:.85rem;color:#667085">📅 <?= e(formatSessionRange($sess)) ?></span>
+                                <?php endif; ?>
                                 <span><?= e(formatPrice((float) ($item['price'] ?? 0))) ?></span>
                             </div>
                         </li>
@@ -392,6 +435,41 @@ $omisePublicKey = omisePublicKey();
     </div>
 </main>
 
+<?php if (!$paymentSuccess): ?>
+<script>
+(function () {
+    var options = document.querySelectorAll('[data-checkout-method]');
+    var detailTransfer = document.getElementById('checkoutDetailTransfer');
+    var detailCard = document.getElementById('checkoutDetailCard');
+    if (!options.length) return;
+
+    function setMethod(method) {
+        options.forEach(function (btn) {
+            var active = btn.getAttribute('data-checkout-method') === method;
+            btn.classList.toggle('is-selected', active);
+            btn.setAttribute('aria-checked', active ? 'true' : 'false');
+        });
+        if (detailTransfer) detailTransfer.hidden = method !== 'transfer';
+        if (detailCard) detailCard.hidden = method !== 'card';
+    }
+
+    options.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var method = btn.getAttribute('data-checkout-method');
+            if (!method) return;
+            if (btn.classList.contains('is-selected')) {
+                btn.classList.remove('is-selected');
+                btn.setAttribute('aria-checked', 'false');
+                if (detailTransfer) detailTransfer.hidden = true;
+                if (detailCard) detailCard.hidden = true;
+                return;
+            }
+            setMethod(method);
+        });
+    });
+})();
+</script>
+<?php endif; ?>
 <?php if ($omiseEnabled && !$paymentSuccess): ?>
 <script src="https://cdn.omise.co/omise.js"></script>
 <script>
@@ -399,16 +477,70 @@ $omisePublicKey = omisePublicKey();
     var form = document.getElementById('omiseCheckoutForm');
     if (!form || typeof Omise === 'undefined') return;
     Omise.setPublicKey(<?= json_encode($omisePublicKey) ?>);
-    var method = document.getElementById('omiseMethod');
-    var cardBox = document.getElementById('omiseCardFields');
-    function toggleCard() {
-        var show = method && method.value === 'card';
-        if (cardBox) cardBox.hidden = !show;
+
+    var cardBrands = {
+        visa: <?= json_encode(imageAsset('images/checkout/cards/visa.svg')) ?>,
+        mastercard: <?= json_encode(imageAsset('images/checkout/cards/mastercard.svg')) ?>,
+        jcb: <?= json_encode(imageAsset('images/checkout/cards/jcb.svg')) ?>,
+        unionpay: <?= json_encode(imageAsset('images/checkout/cards/unionpay.svg')) ?>
+    };
+
+    function formatCardNumber(value) {
+        var digits = String(value || '').replace(/\D/g, '').slice(0, 16);
+        var out = '';
+        for (var i = 0; i < digits.length; i += 4) {
+            if (out) out += ' ';
+            out += digits.slice(i, i + 4);
+        }
+        return out;
     }
-    if (method) method.addEventListener('change', toggleCard);
-    toggleCard();
+
+    function detectCardBrand(digits) {
+        if (!digits) return '';
+        if (/^4/.test(digits)) return 'visa';
+        if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(digits)) return 'mastercard';
+        if (/^35/.test(digits)) return 'jcb';
+        if (/^62/.test(digits)) return 'unionpay';
+        return '';
+    }
+
+    function updateCardBrandIcon(digits) {
+        var brandEl = document.getElementById('omiseCardBrand');
+        var wrap = cardInput ? cardInput.closest('.checkout-card-input-wrap') : null;
+        if (!brandEl) return;
+        var brand = detectCardBrand(digits);
+        if (!brand || !cardBrands[brand]) {
+            brandEl.hidden = true;
+            brandEl.innerHTML = '';
+            if (wrap) wrap.classList.remove('has-brand');
+            return;
+        }
+        brandEl.hidden = false;
+        brandEl.innerHTML = '<img src="' + cardBrands[brand] + '" alt="" width="32" height="20">';
+        if (wrap) wrap.classList.add('has-brand');
+    }
+
+    var cardInput = document.getElementById('omiseCardNumber');
+    if (cardInput) {
+        cardInput.addEventListener('input', function () {
+            var start = cardInput.selectionStart || 0;
+            var digitsBefore = cardInput.value.slice(0, start).replace(/\D/g, '').length;
+            var digits = cardInput.value.replace(/\D/g, '').slice(0, 16);
+            var formatted = formatCardNumber(digits);
+            cardInput.value = formatted;
+            updateCardBrandIcon(digits);
+
+            var pos = 0;
+            var count = 0;
+            for (var i = 0; i < formatted.length && count < digitsBefore; i++) {
+                if (/\d/.test(formatted.charAt(i))) count++;
+                pos = i + 1;
+            }
+            cardInput.setSelectionRange(pos, pos);
+        });
+    }
+
     form.addEventListener('submit', function (e) {
-        if (!method || method.value !== 'card') return;
         e.preventDefault();
         var btn = document.getElementById('omiseSubmitBtn');
         if (btn) btn.disabled = true;

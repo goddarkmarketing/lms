@@ -7,6 +7,10 @@ uploads/courses/*
 !uploads/courses/.gitkeep
 uploads/announcements/*
 !uploads/announcements/.gitkeep
+uploads/sessions/*
+!uploads/sessions/.gitkeep
+storage/cache/*
+!storage/cache/.gitkeep
 node_modules/
 test-results/
 playwright-report/

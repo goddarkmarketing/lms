@@ -141,6 +141,26 @@ function notifyEnrollmentOpened(string $studentEmail, string $studentName, array
     sendMail($studentEmail, '[Wenxin] เปิดสิทธิ์เรียนแล้ว', mailTemplate('เปิดสิทธิ์เรียนแล้ว', $body));
 }
 
+function notifyBookingConfirmedEmail(string $studentEmail, string $studentName, string $courseTitle, string $sessionWhen, ?string $zoomUrl): void
+{
+    if ($studentEmail === '') {
+        return;
+    }
+
+    $body = '<p>สวัสดีคุณ ' . e($studentName) . '</p>'
+        . '<p>ยืนยันการจองคลาสเรียบร้อยแล้ว:</p>'
+        . '<ul>'
+        . '<li><strong>คอร์ส:</strong> ' . e($courseTitle) . '</li>'
+        . '<li><strong>วันเวลา:</strong> ' . e($sessionWhen) . '</li>';
+    if ($zoomUrl) {
+        $body .= '<li><strong>Zoom:</strong> <a href="' . e($zoomUrl) . '">' . e($zoomUrl) . '</a></li>';
+    }
+    $body .= '</ul>'
+        . '<p><a href="' . e(siteBaseUrl() . '/public/profile.php?tab=bookings') . '" style="display:inline-block;background:#c41e24;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px">ดูการจองของฉัน</a></p>';
+
+    sendMail($studentEmail, '[Wenxin] ยืนยันการจองคลาส', mailTemplate('ยืนยันการจองคลาส', $body));
+}
+
 function sendPasswordResetEmail(string $email, string $studentName, string $resetUrl): bool
 {
     $body = '<p>สวัสดีคุณ ' . e($studentName) . '</p>'

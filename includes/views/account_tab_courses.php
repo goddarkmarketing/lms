@@ -5,6 +5,11 @@ declare(strict_types=1);
 /** @var array $enrolled */
 /** @var array $progressMap */
 /** @var array $certByCourse */
+/** @var array $bookingsByCourse */
+$bookingsByCourse = $bookingsByCourse ?? [];
+if (!function_exists('isLiveCourse')) {
+    require_once dirname(__DIR__) . '/booking.php';
+}
 ?>
 <div class="account-panel-head">
     <div>
@@ -37,6 +42,8 @@ declare(strict_types=1);
         $quizzes = $isPending ? [] : getQuizzesByCourse($cid);
         $games = $isPending ? [] : getGamesByCourse($cid);
         $cert = $certByCourse[$cid] ?? null;
+        $courseBooking = $bookingsByCourse[$cid] ?? null;
+        $isLiveCourseItem = isLiveCourse($course);
         if (!$isPending && $prog['percent'] >= 100) {
             maybeMarkEnrollmentCompleted($studentId, $cid);
         }
@@ -65,6 +72,18 @@ declare(strict_types=1);
             <div class="my-courses-pending-box">
                 <?= lucide_icon('clock', ['size' => 18]) ?>
                 <p>ได้รับการแจ้งชำระเงินแล้ว ทีมงานจะตรวจสอบและเปิดสิทธิ์เรียนภายใน 24 ชั่วโมง</p>
+                <?php if ($isLiveCourseItem && $courseBooking): ?>
+                <p class="my-courses-live-booking-note">รอบจอง: <?= e(formatSessionRange($courseBooking)) ?> — จะยืนยันเมื่ออนุมัติชำระเงิน</p>
+                <?php endif; ?>
+            </div>
+            <?php elseif ($isLiveCourseItem): ?>
+            <div class="my-courses-live-box">
+                <?php if ($courseBooking): ?>
+                <p><strong>การจอง Live:</strong> <?= e(formatSessionRange($courseBooking)) ?> · <?= e(bookingStatusLabel($courseBooking['status'] ?? '')) ?></p>
+                <a href="<?= APP_URL ?>/public/profile.php?tab=bookings" class="my-courses-quiz-link">ดูการจอง / Zoom</a>
+                <?php else: ?>
+                <p>คอร์ส Live — <a href="<?= APP_URL ?>/public/book.php?course=<?= e(urlencode($course['slug'])) ?>">จองรอบเรียน</a></p>
+                <?php endif; ?>
             </div>
             <?php else: ?>
             <div class="course-progress-bar-wrap course-progress-bar-wrap--compact">

@@ -1,7 +1,5 @@
-            </div>
-        </div>
-    </div>
-</div>
-<script src="<?= asset('js/admin.js') ?>?v=6"></script>
-</body>
-</html>
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/admin/components/layout_end.php';

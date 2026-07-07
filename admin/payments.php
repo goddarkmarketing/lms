@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_id'], $_POST[
 
 $pageTitle = 'การชำระเงิน';
 require_once dirname(__DIR__) . '/includes/admin_header.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
 
 $message = flash('admin_success');
 
@@ -66,6 +67,7 @@ $statusLabels = [
                     <th>ลูกค้า</th>
                     <th>โทร</th>
                     <th>คอร์ส</th>
+                    <th>รอบเรียน Live</th>
                     <th class="col-amount">จำนวน</th>
                     <th class="col-slip">สลิป</th>
                     <th>สถานะ</th>
@@ -77,6 +79,8 @@ $statusLabels = [
                 <?php
                     $items = $paymentItemsMap[(int) $p['id']] ?? [];
                     $paymentStatus = (string) ($p['status'] ?? 'pending');
+                    $sessionSummary = formatPaymentSessionSummary($p['note'] ?? null, (int) $p['id']);
+                    $paymentBookings = getBookingsByPaymentId((int) $p['id']);
                     $slipFilename = (string) ($p['slip_image'] ?? '');
                     $slipUrl = $slipFilename !== ''
                         ? APP_URL . '/public/view_slip.php?id=' . (int) $p['id']
@@ -84,7 +88,7 @@ $statusLabels = [
                     $slipExt = strtolower(pathinfo(basename($slipFilename), PATHINFO_EXTENSION));
                     $slipIsImage = in_array($slipExt, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
                 ?>
-                <tr>
+                <tr id="payment-<?= (int) $p['id'] ?>">
                     <td class="payment-date"><?= e(date('d/m/Y H:i', strtotime($p['created_at']))) ?></td>
                     <td class="payment-payer">
                         <strong><?= e($p['student_name']) ?></strong>
@@ -102,6 +106,16 @@ $statusLabels = [
                             </ul>
                         <?php else: ?>
                             <?= e($p['course_title'] ?? '-') ?>
+                        <?php endif; ?>
+                    </td>
+                    <td class="payment-session">
+                        <?php if ($sessionSummary): ?>
+                            <span><?= e($sessionSummary) ?></span>
+                            <?php if ($paymentBookings): ?>
+                            <a href="<?= APP_URL ?>/admin/bookings.php" class="btn btn-outline btn-sm" style="margin-top:.35rem">ดูการจอง #<?= (int) $paymentBookings[0]['id'] ?></a>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <span class="payment-slip-missing">—</span>
                         <?php endif; ?>
                     </td>
                     <td class="payment-amount"><?= e(formatPrice((float) $p['amount'])) ?></td>
@@ -141,7 +155,7 @@ $statusLabels = [
                 </tr>
                 <?php if ($p['note']): ?>
                 <tr class="payment-note-tr">
-                    <td colspan="8" class="payment-note-row">
+                    <td colspan="9" class="payment-note-row">
                         <span class="payment-note-label">หมายเหตุ</span>
                         <?= e($p['note']) ?>
                     </td>

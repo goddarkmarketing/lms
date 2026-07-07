@@ -2,6 +2,7 @@
 declare(strict_types=1);
 $pageTitle = 'แดชบอร์ด';
 require_once dirname(__DIR__) . '/includes/admin_header.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
 
 $stats = [
     'courses' => 0,
@@ -10,6 +11,7 @@ $stats = [
     'enrollments' => 0,
     'payments' => 0,
     'pending' => 0,
+    'bookings_pending' => 0,
     'revenue' => 0.0,
     'revenue_month' => 0.0,
     'quiz_attempts' => 0,
@@ -23,6 +25,7 @@ try {
     $stats['enrollments'] = (int) db()->query('SELECT COUNT(*) FROM enrollments WHERE status IN ("active","completed")')->fetchColumn();
     $stats['payments'] = (int) db()->query('SELECT COUNT(*) FROM payments')->fetchColumn();
     $stats['pending'] = (int) db()->query('SELECT COUNT(*) FROM payments WHERE status = "pending"')->fetchColumn();
+    $stats['bookings_pending'] = (int) db()->query('SELECT COUNT(*) FROM session_bookings WHERE status = "pending"')->fetchColumn();
     $stats['revenue'] = (float) db()->query('SELECT COALESCE(SUM(amount),0) FROM payments WHERE status = "verified"')->fetchColumn();
     $stats['revenue_month'] = (float) db()->query('SELECT COALESCE(SUM(amount),0) FROM payments WHERE status = "verified" AND created_at >= DATE_FORMAT(NOW(), "%Y-%m-01")')->fetchColumn();
     $stats['quiz_attempts'] = (int) db()->query('SELECT COUNT(*) FROM quiz_attempts')->fetchColumn();
@@ -79,8 +82,14 @@ try {
         <div class="stat-value"><?= $stats['courses'] ?> / <?= $stats['lessons'] ?></div>
     </div>
     <div class="stat-card">
-        <h3>รอตรวจสอบ</h3>
+        <h3>รอตรวจสอบชำระเงิน</h3>
         <div class="stat-value"><?= $stats['pending'] ?></div>
+        <a href="<?= APP_URL ?>/admin/payments.php" class="btn btn-outline btn-sm" style="margin-top:.5rem">ดูรายการ</a>
+    </div>
+    <div class="stat-card gold">
+        <h3>จองรอยืนยัน</h3>
+        <div class="stat-value"><?= $stats['bookings_pending'] ?></div>
+        <a href="<?= APP_URL ?>/admin/bookings.php?status=pending" class="btn btn-outline btn-sm" style="margin-top:.5rem">ดูการจอง</a>
     </div>
     <div class="stat-card gold">
         <h3>ทำแบบทดสอบ</h3>
@@ -151,6 +160,8 @@ try {
         <a href="<?= APP_URL ?>/admin/courses.php?action=add" class="btn btn-primary btn-sm">เพิ่มคอร์ส</a>
         <a href="<?= APP_URL ?>/admin/quizzes.php?action=add" class="btn btn-secondary btn-sm">เพิ่มแบบทดสอบ</a>
         <a href="<?= APP_URL ?>/admin/coupons.php" class="btn btn-secondary btn-sm">คูปองส่วนลด</a>
+        <a href="<?= APP_URL ?>/admin/sessions.php" class="btn btn-secondary btn-sm">ตารางคลาส Live</a>
+        <a href="<?= APP_URL ?>/admin/bookings.php" class="btn btn-secondary btn-sm">การจองคลาส</a>
         <a href="<?= APP_URL ?>/admin/students.php" class="btn btn-secondary btn-sm">นักเรียน</a>
         <a href="<?= APP_URL ?>/admin/settings.php" class="btn btn-secondary btn-sm">ตั้งค่า</a>
     </div>

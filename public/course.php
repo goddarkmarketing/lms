@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/access.php';
 require_once dirname(__DIR__) . '/includes/instructor.php';
 require_once dirname(__DIR__) . '/includes/game.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
 
 $slug = $_GET['slug'] ?? '';
 if (!$slug) {
@@ -59,18 +60,26 @@ require_once dirname(__DIR__) . '/includes/header.php';
             <a href="<?= APP_URL ?>/public/courses.php">คอร์ส</a> /
             <?= e($course['title']) ?>
         </div>
-        <div class="course-card-meta" style="margin-bottom:1rem">
-            <span class="badge badge-gold"><?= e(categoryLabel($course['category'])) ?></span>
+        <div class="course-card-meta">
+            <span class="badge badge-red"><?= e(categoryLabel($course['category'])) ?></span>
             <span class="badge badge-gold"><?= e(levelBadge($course['level'])) ?></span>
+            <?php if (isLiveCourse($course)): ?>
+            <span class="badge badge-live"><?= e(courseTypeLabel($course['course_type'] ?? 'live')) ?></span>
+            <?php endif; ?>
         </div>
         <h1><?= e($course['title']) ?></h1>
         <?php if (!empty($course['subtitle'])): ?>
             <p class="course-hero-sub"><?= e($course['subtitle']) ?></p>
         <?php endif; ?>
-        <?php if ($hasLessons): ?>
+        <?php if ($hasLessons || isLiveCourse($course)): ?>
         <div class="course-hero-actions">
+            <?php if ($hasLessons): ?>
             <a href="<?= e($startUrl) ?>" class="btn btn-gold">เริ่มเรียนบทแรก</a>
-            <?php if ($lessonStats['preview'] > 0): ?>
+            <?php endif; ?>
+            <?php if (isLiveCourse($course)): ?>
+            <a href="<?= APP_URL ?>/public/book.php?course=<?= e(urlencode($course['slug'])) ?>" class="btn btn-outline">จองคลาส Live</a>
+            <?php endif; ?>
+            <?php if ($hasLessons && $lessonStats['preview'] > 0): ?>
                 <span class="course-hero-note">มี <?= (int) $lessonStats['preview'] ?> บททดลองเรียนฟรี</span>
             <?php endif; ?>
         </div>

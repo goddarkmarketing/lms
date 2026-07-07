@@ -7,10 +7,12 @@ require_once dirname(__DIR__) . '/includes/header.php';
 require_once dirname(__DIR__) . '/includes/cart.php';
 require_once dirname(__DIR__) . '/includes/coupon.php';
 require_once dirname(__DIR__) . '/includes/checkout_flow.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
 
 $cartSuccess = flash('cart_success');
 $cartError = flash('payment_error');
 $items = cartItems();
+$cartSessionDetails = getCartSessionDetails();
 $subtotal = cartSubtotal();
 $discount = cartDiscount();
 $total = cartTotal();
@@ -45,10 +47,14 @@ $appliedCoupon = getAppliedCoupon();
                     <h2 class="cart-page-block-title" id="cart-items-heading">รายการคอร์ส <span class="cart-page-count"><?= count($items) ?> รายการ</span></h2>
                     <ul class="cart-page-list">
                         <?php foreach ($items as $item): ?>
+                        <?php $sess = $cartSessionDetails[(int) ($item['id'] ?? 0)] ?? null; ?>
                         <li class="cart-page-item">
                             <img src="<?= e(courseCoverUrl($item)) ?>" alt="" class="checkout-order-thumb" width="72" height="72" loading="lazy">
                             <div class="cart-page-item-body">
                                 <h3 class="cart-page-item-title"><a href="<?= APP_URL ?>/public/course.php?slug=<?= urlencode($item['slug']) ?>"><?= e($item['title']) ?></a></h3>
+                                <?php if ($sess): ?>
+                                <p class="cart-page-item-session">📅 รอบเรียน: <?= e(formatSessionRange($sess)) ?></p>
+                                <?php endif; ?>
                                 <p class="cart-page-item-price"><?= e(formatPrice((float) ($item['price'] ?? 0))) ?></p>
                             </div>
                             <a class="cart-page-remove" href="<?= APP_URL ?>/public/cart_remove.php?course_id=<?= (int) $item['id'] ?>&return=<?= urlencode('/public/cart.php') ?>">ลบ</a>

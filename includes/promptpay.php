@@ -61,19 +61,38 @@ function buildPromptPayPayload(string $targetId, float $amount, string $type = '
 
 function promptPayQrImageUrl(string $payload, int $size = 280): string
 {
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=' . $size . 'x' . $size
-        . '&data=' . rawurlencode($payload);
+    return 'promptpay_qr.php?size=' . $size . '&data=' . rawurlencode($payload);
 }
 
-function getCheckoutPromptPayData(float $amount): ?array
+function resolvePromptPayTargetId(): string
 {
-    if (getSetting('promptpay_enabled', '1') !== '1' || $amount <= 0) {
-        return null;
-    }
     $id = trim(getSetting('promptpay_id', ''));
     if ($id === '') {
         $id = trim(getSetting('phone', ''));
     }
+    return $id;
+}
+
+function isPromptPayEnabled(): bool
+{
+    return getSetting('promptpay_enabled', '1') === '1';
+}
+
+function formatPromptPayTargetDisplay(string $id, string $type = 'phone'): string
+{
+    $digits = preg_replace('/\D+/', '', $id);
+    if ($type === 'phone' && strlen($digits) === 10) {
+        return substr($digits, 0, 3) . '-' . substr($digits, 3, 3) . '-' . substr($digits, 6);
+    }
+    return $id;
+}
+
+function getCheckoutPromptPayData(float $amount): ?array
+{
+    if (!isPromptPayEnabled() || $amount <= 0) {
+        return null;
+    }
+    $id = resolvePromptPayTargetId();
     if ($id === '') {
         return null;
     }
@@ -84,5 +103,7 @@ function getCheckoutPromptPayData(float $amount): ?array
         'qr_url' => promptPayQrImageUrl($payload),
         'amount' => $amount,
         'target' => $id,
+        'target_display' => formatPromptPayTargetDisplay($id, $type),
+        'target_type' => $type,
     ];
 }

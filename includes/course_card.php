@@ -1,18 +1,26 @@
 <?php
 /** @var array $course */
+if (!function_exists('isLiveCourse')) {
+    require_once __DIR__ . '/booking.php';
+}
 $highlights = !empty($course['highlights']) ? explode('|', $course['highlights']) : [];
 $coverUrl = courseCoverUrl($course);
 $detailUrl = APP_URL . '/public/course.php?slug=' . urlencode($course['slug']);
 $addToCartUrl = courseEnrollUrl($course);
-$buyUrl = APP_URL . '/public/cart_buy.php?course_id=' . (int) ($course['id'] ?? 0);
+$buyUrl = courseBookOrBuyUrl($course);
+$buyLabel = courseBookOrBuyLabel($course);
+$isLive = isLiveCourse($course);
 ?>
-<article class="course-card" data-category="<?= e($course['category']) ?>">
+<article class="course-card" data-category="<?= e($course['category']) ?>" data-type="<?= e($course['course_type'] ?? 'recorded') ?>">
     <a href="<?= e($detailUrl) ?>" class="course-card-image-link">
         <div class="course-card-image">
             <img src="<?= e($coverUrl) ?>" alt="<?= e($course['title']) ?>" loading="lazy">
             <div class="course-card-image-overlay">
                 <span class="badge badge-red"><?= e(categoryLabel($course['category'])) ?></span>
                 <span class="badge badge-gold"><?= e(levelBadge($course['level'])) ?></span>
+                <?php if ($isLive): ?>
+                <span class="badge badge-live"><?= e(courseTypeLabel($course['course_type'] ?? 'live')) ?></span>
+                <?php endif; ?>
             </div>
         </div>
     </a>
@@ -52,7 +60,7 @@ $buyUrl = APP_URL . '/public/cart_buy.php?course_id=' . (int) ($course['id'] ?? 
             <a href="<?= e($addToCartUrl) ?>" class="course-buy-icon-btn js-cart-add" aria-label="เพิ่มลงตะกร้า">
                 <?= lucide_icon('shopping-cart', ['size' => 20]) ?>
             </a>
-            <a href="<?= e($buyUrl) ?>" class="course-buy-main-btn">ซื้อคอร์สนี้</a>
+            <a href="<?= e($buyUrl) ?>" class="course-buy-main-btn"><?= e($buyLabel) ?></a>
         </div>
     </div>
 </article>

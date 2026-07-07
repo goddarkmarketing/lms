@@ -42,10 +42,14 @@ $credentialIcons = ['degree', 'time', 'users', 'award'];
     <?php if ($showStats): ?>
     <div class="instructor-profile-panel-stats">
         <?php foreach ($instructor['stats'] as $stat): ?>
-        <article class="instructor-stat-card">
-            <span class="instructor-stat-icon" aria-hidden="true"><?= instructorStatIconSvg($stat['icon']) ?></span>
-            <p class="instructor-stat-value"><?= e($stat['value']) ?></p>
-            <p class="instructor-stat-label"><?= e($stat['label']) ?></p>
+        <article class="instructor-stat-card" data-stat="<?= e($stat['icon']) ?>">
+            <div class="instructor-stat-icon-wrap" aria-hidden="true">
+                <span class="instructor-stat-icon"><?= instructorStatIconSvg($stat['icon']) ?></span>
+            </div>
+            <div class="instructor-stat-body">
+                <p class="instructor-stat-value"><?= e($stat['value']) ?></p>
+                <p class="instructor-stat-label"><?= e($stat['label']) ?></p>
+            </div>
         </article>
         <?php endforeach; ?>
     </div>

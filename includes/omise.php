@@ -10,6 +10,12 @@ function isOmiseEnabled(): bool
         && omiseSecretKey() !== '';
 }
 
+/** Show Omise block on checkout when a public key is configured. */
+function isOmiseCheckoutVisible(): bool
+{
+    return omisePublicKey() !== '';
+}
+
 function omisePublicKey(): string
 {
     return trim(getSetting('omise_public_key', ''));

@@ -35,7 +35,7 @@ $pageTitle = 'เข้าสู่ระบบผู้ดูแล';
     <title><?= e($pageTitle) ?> | Wenxin Admin</title>
     <meta name="robots" content="noindex, nofollow">
     <?php require dirname(__DIR__) . '/includes/views/fonts_head.php'; ?>
-    <link rel="stylesheet" href="<?= asset('css/admin.css') ?>?v=24">
+    <link rel="stylesheet" href="<?= adminAsset('css/admin.css') ?>">
     <link rel="icon" href="<?= e(brandLogoAsset()) ?>" type="image/svg+xml">
 </head>
 <body class="admin-auth-body">

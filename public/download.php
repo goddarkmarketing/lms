@@ -14,6 +14,9 @@ if ($file === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
 
 $path = UPLOAD_COURSES_PATH . '/' . $file;
 if (!is_file($path)) {
+    $path = UPLOAD_SESSIONS_PATH . '/' . $file;
+}
+if (!is_file($path)) {
     http_response_code(404);
     exit('Not found');
 }
@@ -29,7 +32,7 @@ if ($lessonId > 0) {
         http_response_code(403);
         exit('Forbidden');
     }
-} elseif (!str_starts_with($file, 'cover_')) {
+} elseif (!str_starts_with($file, 'cover_') && !str_starts_with($file, 'session_')) {
     http_response_code(403);
     exit('Forbidden');
 }

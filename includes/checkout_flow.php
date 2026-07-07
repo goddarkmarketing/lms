@@ -93,13 +93,22 @@ function savePaymentItems(int $paymentId, array $cartItems): void
     if ($paymentId <= 0 || !$cartItems) {
         return;
     }
-    $stmt = db()->prepare('INSERT INTO payment_items (payment_id, course_id, amount) VALUES (?, ?, ?)');
+    require_once __DIR__ . '/booking.php';
+    $sessionMap = getCartSessionMap();
+
+    $stmt = db()->prepare('INSERT INTO payment_items (payment_id, course_id, session_id, amount) VALUES (?, ?, ?, ?)');
     foreach ($cartItems as $item) {
         $courseId = (int) ($item['id'] ?? 0);
         if ($courseId <= 0) {
             continue;
         }
-        $stmt->execute([$paymentId, $courseId, (float) ($item['price'] ?? 0)]);
+        $sessionId = $sessionMap[$courseId] ?? null;
+        try {
+            $stmt->execute([$paymentId, $courseId, $sessionId ?: null, (float) ($item['price'] ?? 0)]);
+        } catch (Throwable $e) {
+            $fallback = db()->prepare('INSERT INTO payment_items (payment_id, course_id, amount) VALUES (?, ?, ?)');
+            $fallback->execute([$paymentId, $courseId, (float) ($item['price'] ?? 0)]);
+        }
     }
 }
 
@@ -222,7 +231,7 @@ function getEnrolledCoursesByPhone(string $phone): array
     }
 
     $stmt = db()->prepare('
-        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, e.status, e.enrolled_at
+        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, c.course_type, e.status, e.enrolled_at
         FROM enrollments e
         JOIN students s ON s.id = e.student_id
         JOIN courses c ON c.id = e.course_id
@@ -239,7 +248,7 @@ function getEnrolledCoursesByStudentId(int $studentId): array
         return [];
     }
     $stmt = db()->prepare('
-        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, e.status, e.enrolled_at
+        SELECT c.id, c.slug, c.title, c.subtitle, c.category, c.level, c.price, c.course_type, e.status, e.enrolled_at
         FROM enrollments e
         JOIN courses c ON c.id = e.course_id
         WHERE e.student_id = ? AND e.status IN ("pending", "active", "completed")
@@ -276,6 +285,7 @@ function enrollFromPayment(array $payment): void
 {
     require_once __DIR__ . '/mailer.php';
     require_once __DIR__ . '/line_notify.php';
+    require_once __DIR__ . '/booking.php';
 
     $paymentId = (int) ($payment['id'] ?? 0);
     $courseIds = $paymentId > 0 ? getPaymentCourseIds($paymentId) : [];
@@ -319,4 +329,6 @@ function enrollFromPayment(array $payment): void
             $titles
         );
     }
+
+    confirmBookingsForPayment($paymentId, $studentId);
 }

@@ -8,6 +8,10 @@ function studentAccountTabs(): array
             'label' => 'คอร์สของฉัน',
             'title' => 'คอร์สของฉัน',
         ],
+        'bookings' => [
+            'label' => 'การจองคลาส',
+            'title' => 'การจองคลาส Live',
+        ],
         'profile' => [
             'label' => 'ข้อมูลส่วนตัว',
             'title' => 'ข้อมูลส่วนตัว',

@@ -155,6 +155,15 @@ function asset(string $path): string
     return APP_URL . '/assets/' . ltrim($path, '/');
 }
 
+function adminAsset(string $path = 'css/admin.css'): string
+{
+    $relative = ltrim($path, '/');
+    $full = BASE_PATH . '/assets/' . $relative;
+    $version = is_file($full) ? (string) filemtime($full) : '1';
+
+    return APP_URL . '/assets/' . $relative . '?v=' . $version;
+}
+
 function imageAsset(string $relativePath, string $fallbackPath = ''): string
 {
     $full = BASE_PATH . '/assets/' . ltrim($relativePath, '/');
@@ -245,6 +254,24 @@ function courseEnrollUrl(array $course): string
 function courseBuyUrl(array $course): string
 {
     return APP_URL . '/public/cart_buy.php?course_id=' . (int) ($course['id'] ?? 0);
+}
+
+function courseBookOrBuyUrl(array $course): string
+{
+    if (function_exists('isLiveCourse') && isLiveCourse($course)) {
+        return APP_URL . '/public/book.php?course=' . urlencode((string) ($course['slug'] ?? ''));
+    }
+
+    return courseBuyUrl($course);
+}
+
+function courseBookOrBuyLabel(array $course): string
+{
+    if (function_exists('isLiveCourse') && isLiveCourse($course)) {
+        return 'จองคลาส Live';
+    }
+
+    return 'ซื้อคอร์สนี้';
 }
 
 function courseStartLessonUrl(array $course, array $lessons): string
@@ -477,7 +504,7 @@ function saveSettings(array $pairs): void
     resetSettingsCache();
 }
 
-function getCourses(?string $category = null, bool $activeOnly = true, ?string $search = null): array
+function getCourses(?string $category = null, bool $activeOnly = true, ?string $search = null, ?string $courseType = null): array
 {
     $sql = 'SELECT * FROM courses WHERE 1=1';
     $params = [];
@@ -488,6 +515,10 @@ function getCourses(?string $category = null, bool $activeOnly = true, ?string $
     if ($category) {
         $sql .= ' AND category = ?';
         $params[] = $category;
+    }
+    if ($courseType && in_array($courseType, ['recorded', 'live', 'hybrid'], true)) {
+        $sql .= ' AND course_type = ?';
+        $params[] = $courseType;
     }
     if ($search !== null && $search !== '') {
         $sql .= ' AND (title LIKE ? OR subtitle LIKE ? OR description LIKE ?)';

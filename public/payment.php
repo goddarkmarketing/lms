@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/includes/checkout_flow.php';
 require_once dirname(__DIR__) . '/includes/student_auth.php';
 require_once dirname(__DIR__) . '/includes/mailer.php';
 require_once dirname(__DIR__) . '/includes/line_notify.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('/public/checkout.php');
@@ -36,6 +37,7 @@ if ($summary !== '' && !str_contains($note, $summary)) {
     $note = ($note !== '' ? $note . "\n" : '') . 'คอร์สในตะกร้า: ' . $summary;
 }
 $note = appendCartIdsToNote($note);
+$note = appendSessionMapToNote($note, getCartSessionMap());
 
 $appliedCoupon = getAppliedCoupon();
 $couponCode = $appliedCoupon['code'] ?? null;
@@ -101,6 +103,10 @@ try {
     if ($courseIds) {
         $studentId = resolveCheckoutStudentId($name, $email ?: null, $phone);
         enrollStudentInCourses($studentId, $courseIds, 'pending');
+        $sessionMap = getCartSessionMap();
+        if ($sessionMap) {
+            createBookingsForPayment($paymentId, $studentId, $sessionMap, 'pending');
+        }
     }
 
     $_SESSION['checkout_phone'] = $phone;

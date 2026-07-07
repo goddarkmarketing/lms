@@ -39,6 +39,34 @@ function storeCourseCoverUpload(array $file): string|false|null
     return 'uploads/courses/' . $filename;
 }
 
+function storeSessionImageUpload(array $file): string|false|null
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        flash('admin_error', 'อัปโหลดรูปรอบเรียนไม่สำเร็จ');
+        return false;
+    }
+    if (($file['size'] ?? 0) > MAX_COURSE_IMAGE_BYTES) {
+        flash('admin_error', 'รูปรอบเรียนใหญ่เกิน 3MB');
+        return false;
+    }
+    $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+        flash('admin_error', 'รูปรอบเรียนรองรับเฉพาะ JPG, PNG, WEBP, GIF');
+        return false;
+    }
+    ensureUploadDir(UPLOAD_SESSIONS_PATH);
+    $filename = 'session_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $dest = UPLOAD_SESSIONS_PATH . '/' . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        flash('admin_error', 'บันทึกรูปรอบเรียนไม่สำเร็จ');
+        return false;
+    }
+    return 'uploads/sessions/' . $filename;
+}
+
 function storeAnnouncementImageUpload(array $file): string|false|null
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -129,6 +157,9 @@ function mediaPublicUrl(string $storedPath): string
         return $storedPath;
     }
     if (str_starts_with($storedPath, 'uploads/courses/')) {
+        return APP_URL . '/public/download.php?file=' . urlencode(basename($storedPath));
+    }
+    if (str_starts_with($storedPath, 'uploads/sessions/')) {
         return APP_URL . '/public/download.php?file=' . urlencode(basename($storedPath));
     }
     return asset(ltrim($storedPath, '/'));

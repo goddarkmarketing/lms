@@ -4,6 +4,7 @@ $pageTitle = 'จัดการคอร์ส';
 require_once dirname(__DIR__) . '/includes/admin_header.php';
 require_once dirname(__DIR__) . '/includes/media_upload.php';
 require_once dirname(__DIR__) . '/includes/progress.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
 
 $message = flash('admin_success');
 $error = flash('admin_error');
@@ -27,7 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sortOrder = (int) ($_POST['sort_order'] ?? 0);
     $isFeatured = isset($_POST['is_featured']) ? 1 : 0;
     $isActive = isset($_POST['is_active']) ? 1 : 0;
+    $courseType = $_POST['course_type'] ?? 'recorded';
+    $zoomUrl = trim($_POST['zoom_url'] ?? '');
     $editId = (int) ($_POST['id'] ?? 0);
+
+    if (!in_array($courseType, ['recorded', 'live', 'hybrid'], true)) {
+        $courseType = 'recorded';
+    }
 
     if (!empty($_FILES['cover_image']['name'])) {
         $uploaded = storeCourseCoverUpload($_FILES['cover_image']);
@@ -42,17 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($postAction === 'create') {
             $stmt = db()->prepare('
-                INSERT INTO courses (slug, title, subtitle, description, category, level, price, duration_hours, lesson_count, highlights, image_url, is_featured, is_active, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO courses (slug, title, subtitle, description, category, level, price, duration_hours, lesson_count, highlights, image_url, is_featured, is_active, course_type, zoom_url, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
-            $stmt->execute([$slug, $title, $subtitle, $description, $category, $level, $price, $duration, $lessonCount, $highlights, $imageUrl ?: null, $isFeatured, $isActive, $sortOrder]);
+            $stmt->execute([$slug, $title, $subtitle, $description, $category, $level, $price, $duration, $lessonCount, $highlights, $imageUrl ?: null, $isFeatured, $isActive, $courseType, $zoomUrl ?: null, $sortOrder]);
             flash('admin_success', 'เพิ่มคอร์สเรียบร้อย');
         } elseif ($postAction === 'update' && $editId) {
             $stmt = db()->prepare('
-                UPDATE courses SET slug=?, title=?, subtitle=?, description=?, category=?, level=?, price=?, duration_hours=?, lesson_count=?, highlights=?, image_url=?, is_featured=?, is_active=?, sort_order=?
+                UPDATE courses SET slug=?, title=?, subtitle=?, description=?, category=?, level=?, price=?, duration_hours=?, lesson_count=?, highlights=?, image_url=?, is_featured=?, is_active=?, course_type=?, zoom_url=?, sort_order=?
                 WHERE id=?
             ');
-            $stmt->execute([$slug, $title, $subtitle, $description, $category, $level, $price, $duration, $lessonCount, $highlights, $imageUrl ?: null, $isFeatured, $isActive, $sortOrder, $editId]);
+            $stmt->execute([$slug, $title, $subtitle, $description, $category, $level, $price, $duration, $lessonCount, $highlights, $imageUrl ?: null, $isFeatured, $isActive, $courseType, $zoomUrl ?: null, $sortOrder, $editId]);
             flash('admin_success', 'อัปเดตคอร์สเรียบร้อย');
         } elseif ($postAction === 'delete' && $editId) {
             $stmt = db()->prepare('DELETE FROM courses WHERE id = ?');
@@ -150,6 +157,20 @@ $courses = getCourses(null, false);
                 <label>ไฮไลท์ (คั่นด้วย |)</label>
                 <input type="text" name="highlights" class="form-control" value="<?= e($editCourse['highlights'] ?? '') ?>" placeholder="พินอิน|HSK 1|แบบฝึกหัด">
             </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ประเภทคอร์ส</label>
+                    <select name="course_type" class="form-control">
+                        <option value="recorded" <?= ($editCourse['course_type'] ?? 'recorded') === 'recorded' ? 'selected' : '' ?>>เรียนวิดีโอ (VOD)</option>
+                        <option value="live" <?= ($editCourse['course_type'] ?? '') === 'live' ? 'selected' : '' ?>>คลาสออนไลน์ Live</option>
+                        <option value="hybrid" <?= ($editCourse['course_type'] ?? '') === 'hybrid' ? 'selected' : '' ?>>Hybrid (Live + VOD)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ลิงก์ Zoom คอร์ส (ใช้ร่วมทุกรอบถ้าไม่กำหนดแยก)</label>
+                    <input type="url" name="zoom_url" class="form-control" value="<?= e($editCourse['zoom_url'] ?? '') ?>" placeholder="https://zoom.us/j/...">
+                </div>
+            </div>
             <div class="form-group">
                 <label><input type="checkbox" name="is_featured" <?= !empty($editCourse['is_featured']) ? 'checked' : '' ?>> แสดงในหน้าแรก</label>
             </div>
@@ -176,6 +197,7 @@ $courses = getCourses(null, false);
                 <tr>
                     <th>#</th>
                     <th>ชื่อคอร์ส</th>
+                    <th>ประเภท</th>
                     <th>หมวด</th>
                     <th>ราคา</th>
                     <th>สถานะ</th>
@@ -187,6 +209,7 @@ $courses = getCourses(null, false);
                 <tr>
                     <td><?= (int) $c['id'] ?></td>
                     <td><?= e($c['title']) ?></td>
+                    <td><span class="badge <?= in_array($c['course_type'] ?? 'recorded', ['live', 'hybrid'], true) ? 'badge-verified' : 'badge-pending' ?>"><?= e(courseTypeLabel($c['course_type'] ?? 'recorded')) ?></span></td>
                     <td><?= e(categoryLabel($c['category'])) ?></td>
                     <td><?= e(formatPrice((float) $c['price'])) ?></td>
                     <td><?= $c['is_active'] ? '<span class="badge badge-active">เปิด</span>' : '<span class="badge badge-rejected">ปิด</span>' ?></td>

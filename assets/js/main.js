@@ -48,28 +48,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const courseCards = document.querySelectorAll('.course-card');
   const searchInput = document.getElementById('courseSearch');
   const categorySelect = document.getElementById('courseCategorySelect');
+  const typeSelect = document.getElementById('courseTypeSelect');
   const clearBtn = document.getElementById('courseClearBtn');
 
   function applyCourseFilters() {
     const term = (searchInput?.value ?? '').trim().toLowerCase();
     const cat = categorySelect?.value ?? 'all';
+    const type = typeSelect?.value ?? '';
 
     courseCards.forEach((card) => {
       const cardCat = card.dataset.category;
+      const cardType = card.dataset.type ?? 'recorded';
       const text = (card.innerText ?? '').toLowerCase();
 
       const matchCat = cat === 'all' || cardCat === cat;
+      const matchType = type === '' || cardType === type;
       const matchTerm = term === '' || text.includes(term);
 
-      card.classList.toggle('is-hidden', !(matchCat && matchTerm));
+      card.classList.toggle('is-hidden', !(matchCat && matchType && matchTerm));
     });
   }
 
   searchInput?.addEventListener('input', applyCourseFilters);
   categorySelect?.addEventListener('change', applyCourseFilters);
+  typeSelect?.addEventListener('change', applyCourseFilters);
   clearBtn?.addEventListener('click', () => {
     if (searchInput) searchInput.value = '';
     if (categorySelect) categorySelect.value = 'all';
+    if (typeSelect) typeSelect.value = '';
     applyCourseFilters();
   });
 

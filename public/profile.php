@@ -8,6 +8,8 @@ require_once dirname(__DIR__) . '/includes/progress.php';
 require_once dirname(__DIR__) . '/includes/certificate.php';
 require_once dirname(__DIR__) . '/includes/quiz.php';
 require_once dirname(__DIR__) . '/includes/game.php';
+require_once dirname(__DIR__) . '/includes/booking.php';
+require_once dirname(__DIR__) . '/includes/line_messaging.php';
 
 requireStudentLogin('/public/profile.php');
 
@@ -70,6 +72,11 @@ foreach ($certificates as $cert) {
 }
 $activeCourseCount = count(array_filter($enrolled, static fn($c) => ($c['status'] ?? 'active') !== 'pending'));
 $pendingCourseCount = count($enrolled) - $activeCourseCount;
+$studentBookings = getStudentBookings($studentId);
+$bookingsByCourse = [];
+foreach ($studentBookings as $bookingRow) {
+    $bookingsByCourse[(int) ($bookingRow['course_id'] ?? 0)] = $bookingRow;
+}
 
 $pageTitle = $accountTabs[$tab]['title'];
 require_once dirname(__DIR__) . '/includes/header.php';
@@ -114,6 +121,46 @@ require_once dirname(__DIR__) . '/includes/header.php';
                 <?php require dirname(__DIR__) . '/includes/views/account_tab_courses.php'; ?>
             </div>
 
+            <?php elseif ($tab === 'bookings'): ?>
+            <div class="account-panel">
+                <div class="account-panel-head">
+                    <div>
+                        <h1>การจองคลาส Live</h1>
+                        <p class="account-panel-desc">รอบเรียนที่จองไว้และลิงก์ Zoom</p>
+                    </div>
+                </div>
+                <div class="account-panel-card">
+                    <?php if (!$studentBookings): ?>
+                    <p class="account-empty-text">ยังไม่มีการจองคลาส — <a href="<?= APP_URL ?>/public/courses.php">เลือกคอร์ส Live</a></p>
+                    <?php else: ?>
+                    <ul class="account-cert-list">
+                        <?php foreach ($studentBookings as $booking): ?>
+                        <?php
+                            $zoom = getSessionZoomUrl($booking, $booking);
+                            $bookingStatus = (string) ($booking['status'] ?? '');
+                            $isPendingBooking = $bookingStatus === 'pending';
+                        ?>
+                        <li class="account-cert-item<?= $isPendingBooking ? ' account-cert-item--pending' : '' ?>">
+                            <div>
+                                <strong><?= e($booking['course_title']) ?></strong>
+                                <small><?= e(formatSessionRange($booking)) ?> · <?= e(bookingStatusLabel($bookingStatus)) ?></small>
+                                <?php if ($isPendingBooking): ?>
+                                <span class="account-booking-pending-note">รอทีมงานอนุมัติการชำระเงิน — จะยืนยันการจองอัตโนมัติเมื่ออนุมัติแล้ว</span>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($zoom && $bookingStatus === 'confirmed'): ?>
+                            <a href="<?= e($zoom) ?>" target="_blank" rel="noopener" class="btn btn-primary btn-sm">เข้า Zoom</a>
+                            <?php elseif ($isPendingBooking): ?>
+                            <span class="my-courses-badge my-courses-badge--pending">รออนุมัติ</span>
+                            <?php endif; ?>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php endif; ?>
+                    <?php require dirname(__DIR__) . '/includes/views/account_line_connect.php'; ?>
+                </div>
+            </div>
+
             <?php elseif ($tab === 'profile'): ?>
             <div class="account-panel">
                 <div class="account-panel-head">
@@ -145,6 +192,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                         </div>
                         <button type="submit" class="btn btn-primary">บันทึก</button>
                     </form>
+                    <?php require dirname(__DIR__) . '/includes/views/account_line_connect.php'; ?>
                 </div>
             </div>
 

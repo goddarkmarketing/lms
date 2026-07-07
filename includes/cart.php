@@ -37,11 +37,16 @@ function removeFromCartCourse(int $courseId): void
 {
     $ids = array_values(array_filter(getCartCourseIds(), fn($id) => $id !== $courseId));
     setCartCourseIds($ids);
+    if (function_exists('removeCartSessionForCourse')) {
+        require_once __DIR__ . '/booking.php';
+        removeCartSessionForCourse($courseId);
+    }
 }
 
 function clearCart(): void
 {
     setCartCourseIds([]);
+    clearCartSessions();
     if (function_exists('clearAppliedCoupon')) {
         clearAppliedCoupon();
     }

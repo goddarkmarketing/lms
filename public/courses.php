@@ -6,8 +6,10 @@ require_once dirname(__DIR__) . '/includes/header.php';
 $courses = [];
 $cartSuccess = flash('cart_success');
 $searchQuery = trim($_GET['q'] ?? '');
+$typeFilter = trim($_GET['type'] ?? '');
 try {
-    $courses = getCourses(null, true, $searchQuery !== '' ? $searchQuery : null);
+    $courseType = in_array($typeFilter, ['live', 'hybrid', 'recorded'], true) ? $typeFilter : null;
+    $courses = getCourses(null, true, $searchQuery !== '' ? $searchQuery : null, $courseType);
 } catch (Throwable $e) {
     $courses = [];
 }
@@ -43,6 +45,20 @@ try {
                     </div>
             </div>
             <div class="filter-tools-right">
+                <div class="filter-field">
+                    <label for="courseTypeSelect" class="filter-label">ประเภท</label>
+                        <div class="filter-select-wrap">
+                            <span class="filter-input-icon" aria-hidden="true">
+                                <?= lucide_icon('video', ['size' => 18]) ?>
+                            </span>
+                            <select id="courseTypeSelect" name="type" class="form-control">
+                                <option value="" <?= $typeFilter === '' ? 'selected' : '' ?>>ทั้งหมด</option>
+                                <option value="live" <?= $typeFilter === 'live' ? 'selected' : '' ?>>คลาส Live</option>
+                                <option value="hybrid" <?= $typeFilter === 'hybrid' ? 'selected' : '' ?>>Hybrid</option>
+                                <option value="recorded" <?= $typeFilter === 'recorded' ? 'selected' : '' ?>>เรียนวิดีโอ</option>
+                            </select>
+                        </div>
+                </div>
                 <div class="filter-field">
                     <label for="courseCategorySelect" class="filter-label">หมวดหมู่</label>
                         <div class="filter-select-wrap">

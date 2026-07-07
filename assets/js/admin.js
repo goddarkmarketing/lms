@@ -19,7 +19,7 @@
 
     document.querySelectorAll('.admin-nav a').forEach(function (link) {
       link.addEventListener('click', function () {
-        if (window.matchMedia('(max-width: 960px)').matches) {
+        if (window.matchMedia('(max-width: 1023px)').matches) {
           setOpen(false);
         }
       });

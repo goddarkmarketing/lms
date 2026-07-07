@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
-$pageTitle = 'ตั้งค่าเว็บไซต์';
-require_once dirname(__DIR__) . '/includes/admin_header.php';
 
-$message = flash('admin_success');
+require_once dirname(__DIR__) . '/includes/auth.php';
+requireAdmin();
+
 $keys = [
     'site_title', 'site_tagline', 'hero_title', 'hero_subtitle',
     'bank_account_name', 'bank_name', 'bank_account_number', 'payment_note',
@@ -18,6 +18,8 @@ $keys = [
     'instructor_photo', 'instructor_credentials', 'instructor_highlights',
     'instructor_stat_students', 'instructor_stat_satisfaction',
     'omise_enabled', 'omise_public_key', 'omise_secret_key',
+    'line_oa_enabled', 'line_oa_channel_secret', 'line_oa_channel_token', 'line_oa_basic_id',
+    'payment_gateway_note',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -28,9 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
         ');
         foreach ($keys as $key) {
-            if (in_array($key, ['email_enabled', 'line_notify_enabled', 'promptpay_enabled', 'certificate_require_quiz', 'omise_enabled'], true)) {
+            if (in_array($key, ['email_enabled', 'line_notify_enabled', 'promptpay_enabled', 'certificate_require_quiz', 'omise_enabled', 'line_oa_enabled'], true)) {
                 $value = isset($_POST[$key]) ? '1' : '0';
-            } elseif (in_array($key, ['smtp_pass', 'omise_secret_key'], true) && trim($_POST[$key] ?? '') === '') {
+            } elseif (in_array($key, ['smtp_pass', 'omise_secret_key', 'line_oa_channel_secret', 'line_oa_channel_token'], true) && trim($_POST[$key] ?? '') === '') {
                 continue;
             } else {
                 $value = trim($_POST[$key] ?? '');
@@ -41,10 +43,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Throwable $e) {
         flash('admin_error', 'เกิดข้อผิดพลาด');
     }
+    resetSettingsCache();
     redirect('/admin/settings.php');
 }
 
+$pageTitle = 'ตั้งค่าเว็บไซต์';
+require_once dirname(__DIR__) . '/includes/admin_header.php';
+
+$message = flash('admin_success');
+
 $settings = getSettings();
+require_once dirname(__DIR__) . '/includes/line_messaging.php';
+require_once dirname(__DIR__) . '/includes/promptpay.php';
+$promptPayTarget = resolvePromptPayTargetId();
+$promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
 ?>
 
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
@@ -187,49 +199,176 @@ $settings = getSettings();
                 </select>
             </div>
 
-            <h3>Line Notify</h3>
+            <div class="admin-settings-integration admin-settings-integration--line">
+                <div class="admin-settings-integration-head">
+                    <span class="admin-settings-integration-icon admin-settings-integration-icon--line-notify" aria-hidden="true">
+                        <?= brand_icon('line', ['size' => 28, 'class' => 'admin-settings-brand-icon']) ?>
+                    </span>
+                    <div>
+                        <h3 class="admin-settings-integration-title">Line Notify</h3>
+                        <p class="admin-settings-integration-desc">แจ้งเตือนทีมงานเมื่อมีการชำระเงิน / เปิดสิทธิ์เรียน</p>
+                    </div>
+                </div>
             <div class="form-group">
                 <label><input type="checkbox" name="line_notify_enabled" value="1" <?= ($settings['line_notify_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> เปิดแจ้งเตือน Line Notify</label>
-                <small style="display:block;color:#6b7280">สร้าง Token ที่ <a href="https://notify-bot.line.me/" target="_blank" rel="noopener">notify-bot.line.me</a></small>
+                <small class="form-hint">สร้าง Token ที่ <a href="https://notify-bot.line.me/" target="_blank" rel="noopener">notify-bot.line.me</a></small>
             </div>
             <div class="form-group">
                 <label>Line Notify Token</label>
                 <input type="text" name="line_notify_token" class="form-control" value="<?= e($settings['line_notify_token'] ?? '') ?>" autocomplete="off">
             </div>
+            </div>
 
-            <h3>PromptPay</h3>
+            <div class="admin-settings-integration admin-settings-integration--promptpay">
+                <div class="admin-settings-integration-head">
+                    <span class="admin-settings-integration-icon admin-settings-integration-icon--promptpay" aria-hidden="true">
+                        <?= brand_icon('promptpay', ['size' => 28, 'class' => 'admin-settings-brand-icon']) ?>
+                    </span>
+                    <div>
+                        <h3 class="admin-settings-integration-title">PromptPay — โอนผ่าน QR</h3>
+                        <p class="admin-settings-integration-desc">แสดง QR ยอดชำระจริงบนหน้า Checkout (โอนธนาคาร)</p>
+                    </div>
+                    <?php if ($promptPayReady): ?>
+                    <span class="admin-settings-integration-badge admin-settings-integration-badge--on">พร้อมใช้งาน</span>
+                    <?php elseif (isPromptPayEnabled()): ?>
+                    <span class="admin-settings-integration-badge">ยังไม่ได้ตั้งเบอร์</span>
+                    <?php else: ?>
+                    <span class="admin-settings-integration-badge">ปิดอยู่</span>
+                    <?php endif; ?>
+                </div>
             <div class="form-group">
                 <label><input type="checkbox" name="promptpay_enabled" value="1" <?= ($settings['promptpay_enabled'] ?? '1') === '1' ? 'checked' : '' ?>> แสดง QR PromptPay หน้าชำระเงิน</label>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>เบอร์/เลข PromptPay</label>
-                    <input type="text" name="promptpay_id" class="form-control" value="<?= e($settings['promptpay_id'] ?? '') ?>" placeholder="ว่างไว้ใช้เบอร์โทรจากด้านล่าง">
+                    <label class="admin-settings-label-with-icon"><?= lucide_icon('phone', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> เบอร์/เลข PromptPay</label>
+                    <input type="text" name="promptpay_id" class="form-control" value="<?= e($settings['promptpay_id'] ?? '') ?>" placeholder="เช่น 0895567438">
+                    <small class="form-hint">ว่างไว้จะใช้เบอร์โทรจากช่อง «ติดต่อ» ด้านบน</small>
                 </div>
                 <div class="form-group">
-                    <label>ประเภท</label>
+                    <label class="admin-settings-label-with-icon"><?= lucide_icon('landmark', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> ประเภท</label>
                     <select name="promptpay_id_type" class="form-control">
                         <option value="phone" <?= ($settings['promptpay_id_type'] ?? 'phone') === 'phone' ? 'selected' : '' ?>>เบอร์โทร</option>
                         <option value="national_id" <?= ($settings['promptpay_id_type'] ?? '') === 'national_id' ? 'selected' : '' ?>>เลขบัตรประชาชน</option>
                     </select>
                 </div>
             </div>
+            <?php if ($promptPayReady): ?>
+            <p class="admin-settings-webhook">
+                <?= lucide_icon('smartphone', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?>
+                ตั้งค่าแล้ว: <strong><?= e(formatPromptPayTargetDisplay($promptPayTarget, $settings['promptpay_id_type'] ?? 'phone')) ?></strong>
+                — ลูกค้าจะเห็น QR ที่ <a href="<?= APP_URL ?>/public/checkout.php" target="_blank" rel="noopener">หน้าชำระเงิน</a> เมื่อมีสินค้าในตะกร้า
+            </p>
+            <?php endif; ?>
+            </div>
 
-            <h3>Omise ชำระเงินออนไลน์</h3>
+            <div class="admin-settings-integration admin-settings-integration--omise">
+                <div class="admin-settings-integration-head">
+                    <span class="admin-settings-integration-icon admin-settings-integration-icon--omise" aria-hidden="true">
+                        <?= lucide_icon('credit-card', ['size' => 26, 'stroke' => '1.75']) ?>
+                    </span>
+                    <div>
+                        <h3 class="admin-settings-integration-title">Omise — ชำระเงินออนไลน์</h3>
+                        <p class="admin-settings-integration-desc">PromptPay QR · บัตรเครดิต / เดบิต</p>
+                    </div>
+                    <?php if (($settings['omise_enabled'] ?? '0') === '1'): ?>
+                    <span class="admin-settings-integration-badge admin-settings-integration-badge--on">เปิดใช้งาน</span>
+                    <?php else: ?>
+                    <span class="admin-settings-integration-badge">ปิดอยู่</span>
+                    <?php endif; ?>
+                </div>
             <div class="form-group">
                 <label><input type="checkbox" name="omise_enabled" value="1" <?= ($settings['omise_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> เปิดชำระเงินออนไลน์ (PromptPay / บัตรเครดิต)</label>
-                <small style="display:block;color:#6b7280;margin-top:.25rem">สมัครที่ <a href="https://www.omise.co/" target="_blank" rel="noopener">omise.co</a> — Webhook: <?= e((getSetting('site_url') ?: 'http://localhost/LMS') . '/public/omise_webhook.php') ?></small>
+                <small class="form-hint">สมัครที่ <a href="https://www.omise.co/" target="_blank" rel="noopener">omise.co</a> — Webhook: <code class="admin-settings-code"><?= e((getSetting('site_url') ?: APP_URL) . '/public/omise_webhook.php') ?></code></small>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Omise Public Key (pkey_...)</label>
+                    <label class="admin-settings-label-with-icon"><?= lucide_icon('lock', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Omise Public Key (pkey_...)</label>
                     <input type="text" name="omise_public_key" class="form-control" value="<?= e($settings['omise_public_key'] ?? '') ?>" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label>Omise Secret Key (skey_...)</label>
+                    <label class="admin-settings-label-with-icon"><?= lucide_icon('shield-check', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Omise Secret Key (skey_...)</label>
                     <input type="password" name="omise_secret_key" class="form-control" placeholder="<?= ($settings['omise_secret_key'] ?? '') !== '' ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : '' ?>" autocomplete="new-password">
-                    <small style="color:#6b7280">หรือตั้งใน .env เป็น OMISE_SECRET_KEY</small>
+                    <small class="form-hint">หรือตั้งใน .env เป็น OMISE_SECRET_KEY</small>
                 </div>
+            </div>
+            </div>
+
+            <div class="admin-settings-integration admin-settings-integration--line-oa" id="line-oa">
+                <div class="admin-settings-integration-head">
+                    <span class="admin-settings-integration-icon admin-settings-integration-icon--line-oa" aria-hidden="true">
+                        <?= brand_icon('line', ['size' => 28, 'class' => 'admin-settings-brand-icon']) ?>
+                    </span>
+                    <div>
+                        <h3 class="admin-settings-integration-title">LINE Official Account</h3>
+                        <p class="admin-settings-integration-desc">แจ้งเตือนนักเรียน — การจองคลาส · ลิงก์ Zoom · เตือนก่อนเริ่มเรียน</p>
+                    </div>
+                    <?php if (isLineOaEnabled()): ?>
+                    <span class="admin-settings-integration-badge admin-settings-integration-badge--on">เปิดใช้งาน</span>
+                    <?php else: ?>
+                    <span class="admin-settings-integration-badge">ปิดอยู่</span>
+                    <?php endif; ?>
+                </div>
+            <p class="admin-settings-webhook">
+                <?= lucide_icon('link', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?>
+                Webhook URL: <code class="admin-settings-code"><?= e(lineOaWebhookUrl()) ?></code>
+            </p>
+            <p class="form-hint" style="margin-top:-.35rem;margin-bottom:1rem">
+                ทดสอบ localhost: รัน <code>ngrok http 80</code> แล้วตั้ง Webhook ใน LINE Console เป็น
+                <code>https://xxxx.ngrok-free.app/LMS/public/line_webhook.php</code>
+                (หรือใส่ URL ngrok ใน「URL เว็บไซต์」ด้านบน)
+            </p>
+            <div class="alert alert-warning" style="margin-bottom:1rem;font-size:.88rem">
+                <strong>ส่งเบอร์แล้วไม่ตอบ?</strong> ไปที่
+                <a href="https://manager.line.biz/" target="_blank" rel="noopener">LINE Official Account Manager</a>
+                → ตั้งค่า → การตอบกลับ → เลือก <strong>Webhook</strong> (ไม่ใช่ Chat)
+                และปิด Auto-reply / Greeting message
+            </div>
+            <div class="form-group">
+                <label><input type="checkbox" name="line_oa_enabled" value="1" <?= ($settings['line_oa_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> เปิดส่งแจ้งเตือนผ่าน LINE OA</label>
+                <small class="form-hint">นักเรียน Add Friend แล้วส่งเบอร์โทรในแชทเพื่อเชื่อมบัญชี — ดูขั้นตอนที่ บัญชีของฉัน → การจองคลาส</small>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="admin-settings-label-with-icon"><?= lucide_icon('shield', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Secret</label>
+                    <input type="password" name="line_oa_channel_secret" class="form-control" placeholder="<?= ($settings['line_oa_channel_secret'] ?? '') !== '' ? '••••••••' : '' ?>" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label class="admin-settings-label-with-icon"><?= lucide_icon('lock', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Access Token</label>
+                    <input type="password" name="line_oa_channel_token" class="form-control" placeholder="<?= ($settings['line_oa_channel_token'] ?? '') !== '' ? '••••••••' : '' ?>" autocomplete="new-password">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>LINE OA Basic ID (@username)</label>
+                <input type="text" name="line_oa_basic_id" class="form-control" value="<?= e($settings['line_oa_basic_id'] ?? '') ?>" placeholder="@wenxin หรือปล่อยว่างใช้ Line ID ด้านบน">
+                <small class="form-hint">ใช้สร้างปุ่ม Add Friend ในหน้าบัญชีนักเรียน — กดทดสอบด้านล่างเพื่อดึงอัตโนมัติ</small>
+            </div>
+            <div class="admin-form-actions" style="margin-top:.5rem">
+                <button type="submit" formaction="<?= APP_URL ?>/admin/line_test.php" formnovalidate name="line_test_action" value="bot_info" class="btn btn-outline btn-sm">ทดสอบเชื่อมต่อ LINE API</button>
+                <?php if (lineOaAddFriendUrl()): ?>
+                <a href="<?= e(lineOaAddFriendUrl()) ?>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">เปิด Add Friend</a>
+                <?php endif; ?>
+            </div>
+            <?php if (isLineOaWebhookReady()): ?>
+            <?php
+                $secretLen = strlen(lineOaChannelSecret());
+                $tokenLen = strlen(lineOaChannelToken());
+            ?>
+            <?php if ($secretLen > 0 && $secretLen < 20): ?>
+            <p class="form-hint" style="margin-top:.75rem;color:#b42318">⚠ Channel Secret สั้นเกินไป (<?= $secretLen ?> ตัว) — copy ใหม่จาก LINE Developers → Basic settings (ปกติ ~32 ตัว)</p>
+            <?php elseif ($tokenLen > 0 && $tokenLen < 80): ?>
+            <p class="form-hint" style="margin-top:.75rem;color:#b42318">⚠ Access Token สั้นเกินไป (<?= $tokenLen ?> ตัว) — กด Issue ใหม่ที่ Messaging API</p>
+            <?php else: ?>
+            <p class="form-hint" style="margin-top:.75rem;color:#047857">✓ Token + Secret พร้อม — ตั้ง Webhook ใน LINE Developers แล้วกด Verify</p>
+            <?php endif; ?>
+            <?php endif; ?>
+            </div>
+
+            <h3>หมายเหตุ Payment Gateway</h3>
+            <div class="form-group">
+                <label>ข้อความแสดงหน้าชำระเงิน (ถ้าต้องการ)</label>
+                <textarea name="payment_gateway_note" class="form-control" rows="2"><?= e($settings['payment_gateway_note'] ?? '') ?></textarea>
+                <small style="color:#667085">รองรับ Omise: PromptPay QR และบัตรเครดิต/เดบิต — ทีมงานช่วยเชื่อมหลังลูกค้าสมัครผู้ให้บริการ</small>
             </div>
 
             <h3>ใบประกาศนียบัตร</h3>
