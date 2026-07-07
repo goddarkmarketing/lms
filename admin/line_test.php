@@ -31,8 +31,10 @@ if ($action === 'bot_info') {
             $stmt->execute(['line_oa_basic_id', ltrim($basicId, '@')]);
             resetSettingsCache();
         }
+        unset($_SESSION['flash']['admin_error']);
         flash('admin_success', $msg);
     } else {
+        unset($_SESSION['flash']['admin_success']);
         flash('admin_error', 'เชื่อมต่อ LINE ไม่สำเร็จ — ตรวจสอบ Channel Access Token ใน storage/logs/line_oa.log');
     }
 }

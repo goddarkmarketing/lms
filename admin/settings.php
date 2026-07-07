@@ -40,8 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$key, $value]);
         }
         persistLineOaSettingsFromPost($_POST);
+        unset($_SESSION['flash']['admin_error']);
         flash('admin_success', 'บันทึกการตั้งค่าเรียบร้อย');
     } catch (Throwable $e) {
+        unset($_SESSION['flash']['admin_success']);
         flash('admin_error', 'เกิดข้อผิดพลาด');
     }
     redirect('/admin/settings.php#line-oa');
@@ -51,6 +53,7 @@ $pageTitle = 'ตั้งค่าเว็บไซต์';
 require_once dirname(__DIR__) . '/includes/admin_header.php';
 
 $message = flash('admin_success');
+$error = flash('admin_error');
 
 $settings = getSettings();
 require_once dirname(__DIR__) . '/includes/line_messaging.php';
@@ -60,6 +63,7 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
 ?>
 
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
+<?php if ($error): ?><div class="alert alert-error"><?= e($error) ?></div><?php endif; ?>
 
 <div class="admin-card">
     <div class="admin-card-header">
