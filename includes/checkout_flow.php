@@ -140,21 +140,64 @@ function insertBankTransferPayment(
         $note ?: null,
     ];
 
-    try {
-        $stmt = db()->prepare('
-            INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, coupon_code, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
-        ');
-        $stmt->execute([...$baseParams, $couponCode]);
-        return (int) db()->lastInsertId();
-    } catch (Throwable $e) {
-        $stmt = db()->prepare('
-            INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
-        ');
-        $stmt->execute($baseParams);
-        return (int) db()->lastInsertId();
+    $attempts = [
+        static function () use ($baseParams, $couponCode): int {
+            $stmt = db()->prepare('
+                INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, coupon_code, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
+            ');
+            $stmt->execute([...$baseParams, $couponCode]);
+            return (int) db()->lastInsertId();
+        },
+        static function () use ($baseParams): int {
+            $stmt = db()->prepare('
+                INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
+            ');
+            $stmt->execute($baseParams);
+            return (int) db()->lastInsertId();
+        },
+        static function () use ($courseId, $name, $phone, $amount, $note): int {
+            $stmt = db()->prepare('
+                INSERT INTO payments (course_id, student_name, student_phone, amount, note, status, payment_method)
+                VALUES (?, ?, ?, ?, ?, "pending", "transfer")
+            ');
+            $stmt->execute([$courseId ?: null, $name, $phone, $amount, $note ?: null]);
+            return (int) db()->lastInsertId();
+        },
+        static function () use ($name, $phone, $amount, $note): int {
+            $stmt = db()->prepare('
+                INSERT INTO payments (student_name, student_phone, amount, note, status)
+                VALUES (?, ?, ?, ?, "pending")
+            ');
+            $stmt->execute([$name, $phone, $amount, $note ?: null]);
+            return (int) db()->lastInsertId();
+        },
+    ];
+
+    $errors = [];
+    foreach ($attempts as $attempt) {
+        try {
+            $paymentId = $attempt();
+            if ($paymentId > 0) {
+                return $paymentId;
+            }
+        } catch (Throwable $e) {
+            $errors[] = $e->getMessage();
+        }
     }
+
+    $logDir = BASE_PATH . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    file_put_contents(
+        $logDir . '/payment.log',
+        date('Y-m-d H:i:s') . ' insert failed: ' . implode(' | ', $errors) . "\n",
+        FILE_APPEND
+    );
+
+    throw new RuntimeException($errors[0] ?? 'Unable to save payment');
 }
 
 function getPaymentCourseIds(int $paymentId): array
@@ -167,15 +210,38 @@ function getPaymentCourseIds(int $paymentId): array
 
 function getPaymentItemsWithTitles(int $paymentId): array
 {
-    $stmt = db()->prepare('
-        SELECT pi.course_id, pi.amount, c.title
-        FROM payment_items pi
-        JOIN courses c ON c.id = pi.course_id
-        WHERE pi.payment_id = ?
-        ORDER BY pi.id ASC
-    ');
-    $stmt->execute([$paymentId]);
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare('
+            SELECT pi.course_id, pi.amount, c.title
+            FROM payment_items pi
+            JOIN courses c ON c.id = pi.course_id
+            WHERE pi.payment_id = ?
+            ORDER BY pi.id ASC
+        ');
+        $stmt->execute([$paymentId]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function getPendingEnrollmentsForAdmin(): array
+{
+    try {
+        $stmt = db()->query('
+            SELECT e.id AS enrollment_id, e.student_id, e.course_id, e.enrolled_at,
+                   s.full_name, s.phone, s.email, c.title AS course_title
+            FROM enrollments e
+            JOIN students s ON s.id = e.student_id
+            JOIN courses c ON c.id = e.course_id
+            WHERE e.status = "pending"
+            ORDER BY e.enrolled_at DESC
+            LIMIT 100
+        ');
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
 }
 
 function resolveCheckoutStudentId(string $name, ?string $email, string $phone): int

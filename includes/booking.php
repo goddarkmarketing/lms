@@ -534,17 +534,21 @@ function getBookingsByPaymentId(int $paymentId): array
     if ($paymentId <= 0) {
         return [];
     }
-    $stmt = db()->prepare('
-        SELECT sb.*, cs.starts_at, cs.ends_at, cs.title AS session_title, cs.zoom_url AS session_zoom_url,
-               c.id AS course_id, c.title AS course_title, c.zoom_url AS course_zoom_url
-        FROM session_bookings sb
-        JOIN course_sessions cs ON cs.id = sb.session_id
-        JOIN courses c ON c.id = cs.course_id
-        WHERE sb.payment_id = ?
-        ORDER BY cs.starts_at ASC
-    ');
-    $stmt->execute([$paymentId]);
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare('
+            SELECT sb.*, cs.starts_at, cs.ends_at, cs.title AS session_title, cs.zoom_url AS session_zoom_url,
+                   c.id AS course_id, c.title AS course_title, c.zoom_url AS course_zoom_url
+            FROM session_bookings sb
+            JOIN course_sessions cs ON cs.id = sb.session_id
+            JOIN courses c ON c.id = cs.course_id
+            WHERE sb.payment_id = ?
+            ORDER BY cs.starts_at ASC
+        ');
+        $stmt->execute([$paymentId]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
 }
 
 function getStudentBookingForCourse(int $studentId, int $courseId): ?array

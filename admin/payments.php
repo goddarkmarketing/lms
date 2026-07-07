@@ -31,13 +31,20 @@ require_once dirname(__DIR__) . '/includes/booking.php';
 
 $message = flash('admin_success');
 
-$stmt = db()->query('
-    SELECT p.*, c.title AS course_title
-    FROM payments p
-    LEFT JOIN courses c ON c.id = p.course_id
-    ORDER BY p.created_at DESC
-');
-$payments = $stmt->fetchAll();
+try {
+    $stmt = db()->query('
+        SELECT p.*, c.title AS course_title
+        FROM payments p
+        LEFT JOIN courses c ON c.id = p.course_id
+        ORDER BY p.created_at DESC
+    ');
+    $payments = $stmt->fetchAll();
+} catch (Throwable $e) {
+    $payments = [];
+    $paymentsLoadError = 'โหลดรายการชำระเงินไม่สำเร็จ — ตรวจสอบตาราง payments ในฐานข้อมูล';
+}
+
+$pendingEnrollments = getPendingEnrollmentsForAdmin();
 
 $paymentItemsMap = [];
 foreach ($payments as $p) {
@@ -52,6 +59,46 @@ $statusLabels = [
 ?>
 
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
+<?php if (!empty($paymentsLoadError)): ?><div class="alert alert-error"><?= e($paymentsLoadError) ?></div><?php endif; ?>
+
+<?php if ($pendingEnrollments): ?>
+<div class="admin-card" style="margin-bottom:1rem">
+    <div class="admin-card-header">
+        <h2>นักเรียนรอเปิดสิทธิ์ (<?= count($pendingEnrollments) ?>)</h2>
+    </div>
+    <div class="admin-card-body is-flush">
+        <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>วันที่</th>
+                    <th>นักเรียน</th>
+                    <th>โทร</th>
+                    <th>คอร์ส</th>
+                    <th>จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($pendingEnrollments as $row): ?>
+                <tr>
+                    <td><?= e(date('d/m/Y H:i', strtotime($row['enrolled_at'] ?? 'now'))) ?></td>
+                    <td><strong><?= e($row['full_name'] ?? '') ?></strong></td>
+                    <td><?= e($row['phone'] ?? '-') ?></td>
+                    <td><?= e($row['course_title'] ?? '-') ?></td>
+                    <td>
+                        <a href="<?= APP_URL ?>/admin/students.php?student_id=<?= (int) ($row['student_id'] ?? 0) ?>&open=1" class="btn btn-primary btn-sm">เปิดสิทธิ์</a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        <?php if (!$payments): ?>
+        <p class="form-hint" style="padding:0 1rem 1rem;margin:0">ยังไม่พบรายการแจ้งชำระในตาราง payments — หากนักเรียนแจ้งโอนแล้ว ให้กด「เปิดสิทธิ์」จากรายการด้านบน หรือตรวจสอบ <code>storage/logs/payment.log</code></p>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="admin-card">
     <div class="admin-card-header">
