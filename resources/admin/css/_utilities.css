@@ -508,6 +508,16 @@
     @apply shrink-0 text-gray-400;
   }
 
+  .admin-line-setup-box .form-hint a,
+  .admin-line-setup-steps a {
+    @apply font-medium text-emerald-700 underline underline-offset-2 decoration-emerald-400/80;
+  }
+
+  .admin-line-setup-box .form-hint a:hover,
+  .admin-line-setup-steps a:hover {
+    @apply text-emerald-800 decoration-emerald-600;
+  }
+
   .admin-settings-integration--omise {
     @apply border-indigo-200/80;
   }
@@ -519,5 +529,33 @@
   .admin-settings-integration--line-oa,
   .admin-settings-integration--line {
     border-color: rgb(6 199 85 / 0.25);
+  }
+
+  .admin-line-setup-box {
+    @apply mt-4 rounded-xl border border-gray-200 bg-gray-50/80 p-4;
+  }
+
+  .admin-line-webhook-url {
+    @apply block w-full break-all text-[0.82rem];
+  }
+
+  .admin-line-env-badge {
+    @apply ml-2 inline-flex rounded-full px-2 py-0.5 text-[0.68rem] font-semibold uppercase tracking-wide;
+  }
+
+  .admin-line-env-badge--dev {
+    @apply bg-amber-100 text-amber-800;
+  }
+
+  .admin-line-env-badge--prod {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+
+  .admin-line-setup-steps {
+    @apply my-4 list-decimal space-y-2 pl-5 text-[0.88rem] leading-relaxed text-gray-600;
+  }
+
+  .admin-line-setup-steps code {
+    @apply break-all text-[0.8rem];
   }
 }

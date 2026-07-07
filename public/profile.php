@@ -126,12 +126,12 @@ require_once dirname(__DIR__) . '/includes/header.php';
                 <div class="account-panel-head">
                     <div>
                         <h1>การจองคลาส Live</h1>
-                        <p class="account-panel-desc">รอบเรียนที่จองไว้และลิงก์ Zoom</p>
+                        <p class="account-panel-desc">รอบเรียนที่จองไว้ สถานะการชำระเงิน และลิงก์เข้า Zoom</p>
                     </div>
                 </div>
                 <div class="account-panel-card">
                     <?php if (!$studentBookings): ?>
-                    <p class="account-empty-text">ยังไม่มีการจองคลาส — <a href="<?= APP_URL ?>/public/courses.php">เลือกคอร์ส Live</a></p>
+                    <p class="account-empty-text">ยังไม่มีการจองคลาส — <a href="<?= APP_URL ?>/public/courses.php">เลือกคอร์ส Live ที่ต้องการเรียน</a></p>
                     <?php else: ?>
                     <ul class="account-cert-list">
                         <?php foreach ($studentBookings as $booking): ?>

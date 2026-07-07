@@ -53,6 +53,20 @@ function lineOaWebhookUrl(): string
     return lineOaPublicBaseUrl() . '/public/line_webhook.php';
 }
 
+function lineOaIsLocalDev(): bool
+{
+    $base = strtolower(lineOaPublicBaseUrl());
+    return str_contains($base, 'localhost')
+        || str_contains($base, '127.0.0.1')
+        || str_contains($base, '.local')
+        || str_contains($base, 'ngrok');
+}
+
+function lineOaStudentAccountUrl(): string
+{
+    return lineOaPublicBaseUrl() . '/public/profile.php?tab=bookings';
+}
+
 function lineOaBasicId(): string
 {
     $id = trim(getSetting('line_oa_basic_id', ''));
@@ -284,9 +298,9 @@ function linePushBookingConfirmed(int $studentId, array $booking): void
         . 'คอร์ส: ' . ($booking['course_title'] ?? '') . "\n"
         . 'วันเวลา: ' . $when;
     if ($zoom) {
-        $msg .= "\nZoom: " . $zoom;
+        $msg .= "\nลิงก์ Zoom: " . $zoom;
     }
-    $msg .= "\n\nขอให้เรียนสนุกค่ะ";
+    $msg .= "\n\nดูรายละเอียด: " . lineOaStudentAccountUrl();
 
     linePushMessage((string) $student['line_user_id'], $msg);
 }
@@ -304,12 +318,13 @@ function linePushClassReminder(int $studentId, array $booking): void
     $zoom = $session ? getSessionZoomUrl($session) : null;
     $when = $session ? formatSessionRange($session) : '';
 
-    $msg = "[Wenxin] แจ้งเตือนคลาสเรียน\n"
+    $msg = "[Wenxin Chinese]\nแจ้งเตือนก่อนเริ่มคลาส\n"
         . ($booking['course_title'] ?? '') . "\n"
         . 'เวลา: ' . $when;
     if ($zoom) {
-        $msg .= "\nเข้า Zoom: " . $zoom;
+        $msg .= "\nเข้าเรียน: " . $zoom;
     }
+
     linePushMessage($lineUserId, $msg);
 }
 

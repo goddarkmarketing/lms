@@ -239,6 +239,10 @@
     @apply mb-2 block text-sm font-medium text-gray-700;
   }
 
+  .form-group label.admin-settings-label-with-icon {
+    @apply inline-flex items-center gap-2;
+  }
+
   .form-group small,
   .form-hint {
     @apply mt-1.5 block text-xs leading-relaxed text-gray-500;

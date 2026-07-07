@@ -163,8 +163,9 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
                     <input type="email" name="email_admin" class="form-control" value="<?= e($settings['email_admin'] ?? '') ?>">
                 </div>
                 <div class="form-group">
-                    <label>URL เว็บไซต์ (สำหรับลิงก์ในอีเมล)</label>
-                    <input type="url" name="site_url" class="form-control" value="<?= e($settings['site_url'] ?? 'http://localhost/LMS') ?>" placeholder="http://localhost/LMS">
+                    <label>URL เว็บไซต์ (โดเมนหลัก)</label>
+                    <input type="url" name="site_url" class="form-control" value="<?= e($settings['site_url'] ?? '') ?>" placeholder="https://wenxinchinese.online">
+                    <small class="form-hint">ใช้สร้างลิงก์ในอีเมล, LINE Webhook และหน้าแจ้งเตือน — บนเว็บจริงควรเป็น <code>https://</code> โดเมนของคุณ (ไม่ใช้ localhost)</small>
                 </div>
             </div>
 
@@ -295,13 +296,18 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
             </div>
 
             <div class="admin-settings-integration admin-settings-integration--line-oa" id="line-oa">
+                <?php
+                    $lineWebhookUrl = lineOaWebhookUrl();
+                    $lineSiteBase = lineOaPublicBaseUrl();
+                    $lineIsLocalDev = lineOaIsLocalDev();
+                ?>
                 <div class="admin-settings-integration-head">
                     <span class="admin-settings-integration-icon admin-settings-integration-icon--line-oa" aria-hidden="true">
                         <?= brand_icon('line', ['size' => 28, 'class' => 'admin-settings-brand-icon']) ?>
                     </span>
                     <div>
                         <h3 class="admin-settings-integration-title">LINE Official Account</h3>
-                        <p class="admin-settings-integration-desc">แจ้งเตือนนักเรียน — การจองคลาส · ลิงก์ Zoom · เตือนก่อนเริ่มเรียน</p>
+                        <p class="admin-settings-integration-desc">แจ้งเตือนนักเรียนเมื่อจองคลาส · ส่งลิงก์ Zoom · เตือนก่อนเริ่มเรียน</p>
                     </div>
                     <?php if (isLineOaEnabled()): ?>
                     <span class="admin-settings-integration-badge admin-settings-integration-badge--on">เปิดใช้งาน</span>
@@ -309,44 +315,67 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
                     <span class="admin-settings-integration-badge">ปิดอยู่</span>
                     <?php endif; ?>
                 </div>
-            <p class="admin-settings-webhook">
-                <?= lucide_icon('link', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?>
-                Webhook URL: <code class="admin-settings-code"><?= e(lineOaWebhookUrl()) ?></code>
-            </p>
-            <p class="form-hint" style="margin-top:-.35rem;margin-bottom:1rem">
-                ทดสอบ localhost: รัน <code>ngrok http 80</code> แล้วตั้ง Webhook ใน LINE Console เป็น
-                <code>https://xxxx.ngrok-free.app/LMS/public/line_webhook.php</code>
-                (หรือใส่ URL ngrok ใน「URL เว็บไซต์」ด้านบน)
-            </p>
-            <div class="alert alert-warning" style="margin-bottom:1rem;font-size:.88rem">
-                <strong>ส่งเบอร์แล้วไม่ตอบ?</strong> ไปที่
-                <a href="https://manager.line.biz/" target="_blank" rel="noopener">LINE Official Account Manager</a>
-                → ตั้งค่า → การตอบกลับ → เลือก <strong>Webhook</strong> (ไม่ใช่ Chat)
-                และปิด Auto-reply / Greeting message
+
+            <div class="admin-line-setup-box">
+                <p class="admin-settings-webhook" style="margin-bottom:.5rem">
+                    <?= lucide_icon('link', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?>
+                    Webhook URL
+                    <span class="admin-line-env-badge<?= $lineIsLocalDev ? ' admin-line-env-badge--dev' : ' admin-line-env-badge--prod' ?>">
+                        <?= $lineIsLocalDev ? 'โหมดทดสอบ' : 'โดเมนจริง' ?>
+                    </span>
+                </p>
+                <code class="admin-settings-code admin-line-webhook-url"><?= e($lineWebhookUrl) ?></code>
+                <p class="form-hint" style="margin-top:.65rem;margin-bottom:0">
+                    คัดลอก URL นี้ไปตั้งใน <a href="https://developers.line.biz/console/" target="_blank" rel="noopener">LINE Developers Console</a>
+                    → Messaging API → Webhook settings → เปิด Use webhook แล้วกด Verify
+                </p>
             </div>
+
+            <?php if ($lineIsLocalDev): ?>
+            <div class="alert alert-warning" style="margin:1rem 0;font-size:.88rem">
+                <strong>ทดสอบบนเครื่องตัวเอง:</strong> LINE ไม่เรียก <code>localhost</code> ได้โดยตรง
+                — รัน <code>ngrok http 80</code> แล้วตั้ง Webhook เป็น URL ของ ngrok
+                หรือเปลี่ยน「URL เว็บไซต์」ด้านบนเป็น URL ชั่วคราวของ ngrok
+            </div>
+            <?php else: ?>
+            <ol class="admin-line-setup-steps">
+                <li>ใส่ <strong>Channel Secret</strong> และ <strong>Channel Access Token</strong> จาก LINE Developers</li>
+                <li>ตั้ง Webhook เป็น <code><?= e($lineWebhookUrl) ?></code> แล้วกด Verify ให้ผ่าน</li>
+                <li>เปิด「ส่งแจ้งเตือนผ่าน LINE OA」ด้านล่าง แล้วกดบันทึก</li>
+                <li>ไปที่ <a href="https://manager.line.biz/" target="_blank" rel="noopener">LINE Official Account Manager</a>
+                    → การตอบกลับ → เลือก <strong>Webhook</strong> และปิด Auto-reply / Greeting</li>
+            </ol>
+            <?php endif; ?>
+
+            <div class="alert alert-warning" style="margin-bottom:1rem;font-size:.88rem">
+                <strong>ส่งเบอร์แล้วไม่มีการตอบกลับ?</strong>
+                ตรวจสอบว่า Webhook เปิดใช้งาน, Channel Secret ถูกต้อง (ปกติ ~32 ตัว)
+                และโหมดการตอบกลับเป็น Webhook ไม่ใช่ Chat
+            </div>
+
             <div class="form-group">
                 <label><input type="checkbox" name="line_oa_enabled" value="1" <?= ($settings['line_oa_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> เปิดส่งแจ้งเตือนผ่าน LINE OA</label>
-                <small class="form-hint">นักเรียน Add Friend แล้วส่งเบอร์โทรในแชทเพื่อเชื่อมบัญชี — ดูขั้นตอนที่ บัญชีของฉัน → การจองคลาส</small>
+                <small class="form-hint">นักเรียนเพิ่มเพื่อน Official Account แล้วส่งเบอร์โทรที่ใช้สมัครในแชทเพื่อเชื่อมบัญชี — ดูขั้นตอนที่ บัญชีของฉัน → การจองคลาส</small>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="admin-settings-label-with-icon"><?= lucide_icon('shield', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Secret</label>
-                    <input type="password" name="line_oa_channel_secret" class="form-control" placeholder="<?= ($settings['line_oa_channel_secret'] ?? '') !== '' ? '••••••••' : '' ?>" autocomplete="new-password">
+                    <input type="password" name="line_oa_channel_secret" class="form-control" placeholder="<?= ($settings['line_oa_channel_secret'] ?? '') !== '' ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Basic settings' ?>" autocomplete="new-password">
                 </div>
                 <div class="form-group">
                     <label class="admin-settings-label-with-icon"><?= lucide_icon('lock', ['size' => 16, 'class' => 'admin-settings-label-icon']) ?> Channel Access Token</label>
-                    <input type="password" name="line_oa_channel_token" class="form-control" placeholder="<?= ($settings['line_oa_channel_token'] ?? '') !== '' ? '••••••••' : '' ?>" autocomplete="new-password">
+                    <input type="password" name="line_oa_channel_token" class="form-control" placeholder="<?= ($settings['line_oa_channel_token'] ?? '') !== '' ? '•••••••• (ว่างไว้ = ไม่เปลี่ยน)' : 'จาก LINE Developers → Messaging API' ?>" autocomplete="new-password">
                 </div>
             </div>
             <div class="form-group">
                 <label>LINE OA Basic ID (@username)</label>
-                <input type="text" name="line_oa_basic_id" class="form-control" value="<?= e($settings['line_oa_basic_id'] ?? '') ?>" placeholder="@wenxin หรือปล่อยว่างใช้ Line ID ด้านบน">
-                <small class="form-hint">ใช้สร้างปุ่ม Add Friend ในหน้าบัญชีนักเรียน — กดทดสอบด้านล่างเพื่อดึงอัตโนมัติ</small>
+                <input type="text" name="line_oa_basic_id" class="form-control" value="<?= e($settings['line_oa_basic_id'] ?? '') ?>" placeholder="เช่น wenxin (ไม่ต้องใส่ @)">
+                <small class="form-hint">ใช้สร้างปุ่ม「เพิ่มเพื่อนใน LINE」ในหน้าบัญชีนักเรียน — กดทดสอบด้านล่างเพื่อดึงอัตโนมัติ หรือปล่อยว่างเพื่อใช้ Line ID ในหมวดติดต่อ</small>
             </div>
             <div class="admin-form-actions" style="margin-top:.5rem">
                 <button type="submit" formaction="<?= APP_URL ?>/admin/line_test.php" formnovalidate name="line_test_action" value="bot_info" class="btn btn-outline btn-sm">ทดสอบเชื่อมต่อ LINE API</button>
                 <?php if (lineOaAddFriendUrl()): ?>
-                <a href="<?= e(lineOaAddFriendUrl()) ?>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">เปิด Add Friend</a>
+                <a href="<?= e(lineOaAddFriendUrl()) ?>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">เปิดหน้าเพิ่มเพื่อน</a>
                 <?php endif; ?>
             </div>
             <?php if (isLineOaWebhookReady()): ?>
@@ -355,11 +384,11 @@ $promptPayReady = isPromptPayEnabled() && $promptPayTarget !== '';
                 $tokenLen = strlen(lineOaChannelToken());
             ?>
             <?php if ($secretLen > 0 && $secretLen < 20): ?>
-            <p class="form-hint" style="margin-top:.75rem;color:#b42318">⚠ Channel Secret สั้นเกินไป (<?= $secretLen ?> ตัว) — copy ใหม่จาก LINE Developers → Basic settings (ปกติ ~32 ตัว)</p>
+            <p class="form-hint" style="margin-top:.75rem;color:#b42318">Channel Secret สั้นเกินไป (<?= $secretLen ?> ตัว) — คัดลอกใหม่จาก LINE Developers → Basic settings (ปกติประมาณ 32 ตัว)</p>
             <?php elseif ($tokenLen > 0 && $tokenLen < 80): ?>
-            <p class="form-hint" style="margin-top:.75rem;color:#b42318">⚠ Access Token สั้นเกินไป (<?= $tokenLen ?> ตัว) — กด Issue ใหม่ที่ Messaging API</p>
+            <p class="form-hint" style="margin-top:.75rem;color:#b42318">Access Token สั้นเกินไป (<?= $tokenLen ?> ตัว) — กด Issue ใหม่ที่ Messaging API</p>
             <?php else: ?>
-            <p class="form-hint" style="margin-top:.75rem;color:#047857">✓ Token + Secret พร้อม — ตั้ง Webhook ใน LINE Developers แล้วกด Verify</p>
+            <p class="form-hint" style="margin-top:.75rem;color:#047857">พร้อมใช้งาน — ตั้ง Webhook ใน LINE Developers แล้วกด Verify ให้ผ่าน</p>
             <?php endif; ?>
             <?php endif; ?>
             </div>

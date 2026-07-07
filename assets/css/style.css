@@ -2266,6 +2266,13 @@ a:hover { color: var(--red-dark); }
   margin: 0;
   font-size: .88rem;
   color: var(--gray-600);
+  line-height: 1.5;
+}
+.account-line-intro {
+  margin: 0 0 .75rem;
+  font-size: .86rem;
+  color: var(--gray-700);
+  line-height: 1.5;
 }
 .btn-line {
   background: #06c755;
