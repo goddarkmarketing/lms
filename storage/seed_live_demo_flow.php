@@ -57,7 +57,7 @@ $studentId = (int) ($student['id'] ?? 0);
 // --- reset prior demo booking for clean test ---
 db()->prepare('UPDATE session_bookings SET status="cancelled" WHERE student_id=? AND session_id=? AND status IN ("pending","confirmed")')
     ->execute([$studentId, $sessionId]);
-db()->prepare('UPDATE course_sessions SET booked_count = GREATEST(booked_count - 1, 0) WHERE id=?')->execute([$sessionId]);
+db()->prepare('UPDATE course_sessions SET booked_count = 0 WHERE id=? AND booked_count > 0')->execute([$sessionId]);
 
 // --- Phase A: pending ---
 $sessionMap = [$courseId => $sessionId];

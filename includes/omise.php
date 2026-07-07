@@ -83,6 +83,9 @@ function amountToSatang(float $amount): int
 
 function createPendingOmisePayment(array $customer, array $cartItems, float $amount, ?string $couponCode): int
 {
+    require_once __DIR__ . '/booking.php';
+    require_once __DIR__ . '/student_auth.php';
+
     $name = trim($customer['name'] ?? '');
     $phone = trim($customer['phone'] ?? '');
     $email = trim($customer['email'] ?? '') ?: null;
@@ -92,6 +95,7 @@ function createPendingOmisePayment(array $customer, array $cartItems, float $amo
     if ($couponCode) {
         $note .= "\ncoupon:" . $couponCode;
     }
+    $note = appendSessionMapToNote($note, getCartSessionMap());
     $note .= "\npayment_method:omise";
 
     $stmt = db()->prepare('
@@ -101,6 +105,17 @@ function createPendingOmisePayment(array $customer, array $cartItems, float $amo
     $stmt->execute([$courseId ?: null, $name, $email, $phone, $amount, $note, $couponCode]);
     $paymentId = (int) db()->lastInsertId();
     savePaymentItems($paymentId, $cartItems);
+
+    $courseIds = getCourseIdsFromCartItems($cartItems);
+    if ($courseIds) {
+        $studentId = resolveCheckoutStudentId($name, $email, $phone);
+        enrollStudentInCourses($studentId, $courseIds, 'pending');
+        $sessionMap = getCartSessionMap();
+        if ($sessionMap) {
+            createBookingsForPayment($paymentId, $studentId, $sessionMap, 'pending');
+        }
+    }
+
     return $paymentId;
 }
 

@@ -257,6 +257,106 @@ function parseSessionMapFromNote(?string $note): array
     return $map;
 }
 
+function bookingLog(string $message): void
+{
+    $logDir = BASE_PATH . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    file_put_contents($logDir . '/booking.log', date('Y-m-d H:i:s') . ' ' . $message . "\n", FILE_APPEND);
+}
+
+function resolveSessionIdForBooking(int $courseId, int $sessionId): ?int
+{
+    if ($sessionId > 0) {
+        $session = getSessionById($sessionId);
+        if ($session) {
+            return $sessionId;
+        }
+    }
+    if ($courseId > 0) {
+        $sessions = getAvailableSessions($courseId, 1);
+        if ($sessions) {
+            return (int) $sessions[0]['id'];
+        }
+        $stmt = db()->prepare('
+            SELECT id FROM course_sessions
+            WHERE course_id = ? AND status = "scheduled"
+            ORDER BY starts_at ASC
+            LIMIT 1
+        ');
+        $stmt->execute([$courseId]);
+        $fallback = (int) ($stmt->fetchColumn() ?: 0);
+
+        return $fallback > 0 ? $fallback : null;
+    }
+
+    return null;
+}
+
+function syncSessionBookingsFromPayment(int $paymentId): int
+{
+    if ($paymentId <= 0) {
+        return 0;
+    }
+
+    try {
+        if (getBookingsByPaymentId($paymentId)) {
+            return 0;
+        }
+
+        $stmt = db()->prepare('SELECT * FROM payments WHERE id = ? LIMIT 1');
+        $stmt->execute([$paymentId]);
+        $payment = $stmt->fetch();
+        if (!$payment) {
+            return 0;
+        }
+
+        $sessionMap = parseSessionMapFromNote((string) ($payment['note'] ?? ''));
+        if (!$sessionMap) {
+            return 0;
+        }
+
+        require_once __DIR__ . '/checkout_flow.php';
+        $studentId = findOrCreateStudent(
+            (string) ($payment['student_name'] ?? ''),
+            $payment['student_email'] ?? null,
+            (string) ($payment['student_phone'] ?? '')
+        );
+        $status = ($payment['status'] ?? '') === 'verified' ? 'confirmed' : 'pending';
+        createBookingsForPayment($paymentId, $studentId, $sessionMap, $status);
+
+        return count(getBookingsByPaymentId($paymentId));
+    } catch (Throwable $e) {
+        bookingLog('sync payment #' . $paymentId . ': ' . $e->getMessage());
+
+        return 0;
+    }
+}
+
+function syncAllMissingSessionBookings(int $limit = 150): int
+{
+    try {
+        $stmt = db()->query('
+            SELECT id FROM payments
+            WHERE status IN ("pending", "verified")
+              AND note LIKE "%session_map:%"
+            ORDER BY id DESC
+            LIMIT ' . (int) $limit
+        );
+        $synced = 0;
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $paymentId) {
+            $synced += syncSessionBookingsFromPayment((int) $paymentId);
+        }
+
+        return $synced;
+    } catch (Throwable $e) {
+        bookingLog('sync all: ' . $e->getMessage());
+
+        return 0;
+    }
+}
+
 function createSessionBooking(int $sessionId, int $studentId, ?int $paymentId, string $status = 'pending'): ?int
 {
     if ($sessionId <= 0 || $studentId <= 0) {
@@ -306,6 +406,15 @@ function incrementSessionBookedCount(int $sessionId): void
     ')->execute([$sessionId]);
 }
 
+function decrementSessionBookedCount(int $sessionId): void
+{
+    db()->prepare('
+        UPDATE course_sessions
+        SET booked_count = CASE WHEN booked_count > 0 THEN booked_count - 1 ELSE 0 END
+        WHERE id = ?
+    ')->execute([$sessionId]);
+}
+
 function confirmSessionBooking(int $bookingId): void
 {
     $stmt = db()->prepare('SELECT session_id, status FROM session_bookings WHERE id = ? LIMIT 1');
@@ -328,33 +437,43 @@ function cancelSessionBooking(int $bookingId): void
     }
     db()->prepare('UPDATE session_bookings SET status = "cancelled" WHERE id = ?')->execute([$bookingId]);
     if (($row['status'] ?? '') === 'confirmed') {
-        db()->prepare('
-            UPDATE course_sessions SET booked_count = GREATEST(booked_count - 1, 0) WHERE id = ?
-        ')->execute([(int) $row['session_id']]);
+        decrementSessionBookedCount((int) $row['session_id']);
     }
 }
 
 function createBookingsForPayment(int $paymentId, int $studentId, array $sessionMap, string $status = 'pending'): void
 {
-    if (!$sessionMap) {
+    if (!$sessionMap || $paymentId <= 0 || $studentId <= 0) {
         return;
     }
     try {
-        foreach ($sessionMap as $sessionId) {
-            createSessionBooking((int) $sessionId, $studentId, $paymentId, $status);
+        foreach ($sessionMap as $courseId => $sessionId) {
+            $courseId = (int) $courseId;
+            $sessionId = (int) $sessionId;
+            if ($courseId <= 0 && $sessionId > 0) {
+                $session = getSessionById($sessionId);
+                $courseId = $session ? (int) $session['course_id'] : 0;
+            }
+            $resolvedSessionId = resolveSessionIdForBooking($courseId, $sessionId);
+            if (!$resolvedSessionId) {
+                bookingLog("payment #{$paymentId}: no session for course #{$courseId} (wanted session #{$sessionId})");
+                continue;
+            }
+            $bookingId = createSessionBooking($resolvedSessionId, $studentId, $paymentId, $status);
+            if (!$bookingId) {
+                bookingLog("payment #{$paymentId}: createSessionBooking failed for session #{$resolvedSessionId}");
+            }
         }
     } catch (Throwable $e) {
-        $logDir = BASE_PATH . '/storage/logs';
-        if (!is_dir($logDir)) {
-            @mkdir($logDir, 0755, true);
-        }
-        file_put_contents($logDir . '/payment.log', date('Y-m-d H:i:s') . ' booking: ' . $e->getMessage() . "\n", FILE_APPEND);
+        bookingLog('payment #' . $paymentId . ': ' . $e->getMessage());
     }
 }
 
 function confirmBookingsForPayment(int $paymentId, int $studentId): void
 {
     require_once __DIR__ . '/line_messaging.php';
+
+    syncSessionBookingsFromPayment($paymentId);
 
     $stmt = db()->prepare('
         SELECT sb.id, sb.session_id, cs.starts_at, cs.title AS session_title, c.title AS course_title

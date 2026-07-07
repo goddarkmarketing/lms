@@ -6,8 +6,15 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 requireAdmin();
 require_once dirname(__DIR__) . '/includes/booking.php';
 require_once dirname(__DIR__) . '/includes/line_messaging.php';
+require_once dirname(__DIR__) . '/includes/schema.php';
 
 $filter = $_GET['status'] ?? '';
+$schemaMissing = missingDatabaseTables();
+$schemaError = $schemaMissing ? migrationHintMessage($schemaMissing) : '';
+$syncedBookings = 0;
+if (!$schemaMissing) {
+    $syncedBookings = syncAllMissingSessionBookings();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
@@ -39,11 +46,17 @@ $pageTitle = 'รายการจองคลาส';
 require_once dirname(__DIR__) . '/includes/admin_header.php';
 
 $message = flash('admin_success');
+if ($syncedBookings > 0) {
+    $message = $message
+        ? $message . ' (ซิงก์รายการจองจากการชำระเงิน ' . $syncedBookings . ' รายการ)'
+        : 'ซิงก์รายการจองจากการชำระเงิน ' . $syncedBookings . ' รายการ';
+}
 
 $bookings = getAdminBookings($filter !== '' ? $filter : null);
 ?>
 
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
+<?php if ($schemaError): ?><div class="alert alert-warning"><?= e($schemaError) ?></div><?php endif; ?>
 
 <div class="admin-card">
     <div class="admin-card-header">

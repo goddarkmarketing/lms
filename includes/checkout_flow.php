@@ -588,5 +588,6 @@ function enrollFromPayment(array $payment): void
         );
     }
 
+    syncSessionBookingsFromPayment($paymentId);
     confirmBookingsForPayment($paymentId, $studentId);
 }

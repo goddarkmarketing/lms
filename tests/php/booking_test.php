@@ -185,5 +185,34 @@ test_check('อัปเดตรอบเรียน', ($updated['title'] ?? '
 db()->prepare('DELETE FROM course_sessions WHERE id = ?')->execute([$sessionId]);
 test_check('ลบรอบเรียน', getSessionById($sessionId) === null);
 
+// --- sync from payment note (stale session id fallback) ---
+$syncCourse = ensureLiveTestCourse();
+$syncCourseId = (int) $syncCourse['id'];
+$syncStarts = date('Y-m-d H:i:s', strtotime('+5 days 14:00'));
+$syncEnds = date('Y-m-d H:i:s', strtotime('+5 days 15:30'));
+db()->prepare('
+    INSERT INTO course_sessions (course_id, title, starts_at, ends_at, capacity, status)
+    VALUES (?, ?, ?, ?, 5, "scheduled")
+')->execute([$syncCourseId, 'Sync Test Session', $syncStarts, $syncEnds]);
+$validSessionId = (int) db()->lastInsertId();
+$staleSessionId = 999991;
+$syncNote = appendSessionMapToNote('sync test', [$syncCourseId => $staleSessionId]);
+db()->prepare('
+    INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, note, status, payment_method)
+    VALUES (?, ?, ?, ?, ?, ?, "verified", "transfer")
+')->execute([
+    $syncCourseId,
+    'Sync Test',
+    'sync-booking-test@wenxin-test.local',
+    '0899990099',
+    990,
+    $syncNote,
+]);
+$syncPaymentId = (int) db()->lastInsertId();
+$syncedCount = syncSessionBookingsFromPayment($syncPaymentId);
+test_check('syncSessionBookingsFromPayment จาก note', $syncedCount >= 1, "#{$syncPaymentId}");
+$syncBookings = getBookingsByPaymentId($syncPaymentId);
+test_check('sync ใช้รอบเรียนที่มีจริง', (int) ($syncBookings[0]['session_id'] ?? 0) === $validSessionId);
+
 $result = test_print_summary('LMS Booking Test');
 exit($result['fail'] > 0 ? 1 : 0);
