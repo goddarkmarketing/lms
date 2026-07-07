@@ -336,8 +336,18 @@ function cancelSessionBooking(int $bookingId): void
 
 function createBookingsForPayment(int $paymentId, int $studentId, array $sessionMap, string $status = 'pending'): void
 {
-    foreach ($sessionMap as $sessionId) {
-        createSessionBooking((int) $sessionId, $studentId, $paymentId, $status);
+    if (!$sessionMap) {
+        return;
+    }
+
+    try {
+        foreach ($sessionMap as $sessionId) {
+            createSessionBooking((int) $sessionId, $studentId, $paymentId, $status);
+        }
+    } catch (Throwable $e) {
+        if (function_exists('checkoutLog')) {
+            checkoutLog('createBookingsForPayment: ' . $e->getMessage());
+        }
     }
 }
 

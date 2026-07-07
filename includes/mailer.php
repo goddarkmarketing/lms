@@ -174,16 +174,23 @@ function sendPasswordResetEmail(string $email, string $studentName, string $rese
 
 function getPaymentCourseTitles(int $paymentId): array
 {
-    $stmt = db()->prepare('
-        SELECT c.title FROM payment_items pi
-        JOIN courses c ON c.id = pi.course_id
-        WHERE pi.payment_id = ?
-        ORDER BY c.title
-    ');
-    $stmt->execute([$paymentId]);
-    $titles = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    if ($titles) {
-        return $titles;
+    try {
+        $stmt = db()->prepare('
+            SELECT c.title FROM payment_items pi
+            JOIN courses c ON c.id = pi.course_id
+            WHERE pi.payment_id = ?
+            ORDER BY c.title
+        ');
+        $stmt->execute([$paymentId]);
+        $titles = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if ($titles) {
+            return $titles;
+        }
+    } catch (Throwable $e) {
+        if (function_exists('checkoutLog')) {
+            checkoutLog('getPaymentCourseTitles: ' . $e->getMessage());
+        }
     }
+
     return [];
 }

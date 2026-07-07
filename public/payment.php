@@ -64,12 +64,13 @@ if (!empty($_FILES['slip_image']['name'])) {
     $slipPath = $uploaded;
 }
 
+$pdo = db();
+$paymentId = 0;
+
 try {
-    $stmt = db()->prepare('
-        INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, coupon_code, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
-    ');
-    $stmt->execute([
+    $pdo->beginTransaction();
+
+    $paymentId = insertBankTransferPayment(
         $courseId ?: null,
         $name,
         $email ?: null,
@@ -79,25 +80,18 @@ try {
         $transferTime ?: null,
         $slipPath,
         $note ?: null,
-        $couponCode,
-    ]);
-    $paymentId = (int) db()->lastInsertId();
+        $couponCode
+    );
+
     savePaymentItems($paymentId, $items);
 
     if ($couponCode) {
-        incrementCouponUsage($couponCode);
+        try {
+            incrementCouponUsage($couponCode);
+        } catch (Throwable $e) {
+            checkoutLog('incrementCouponUsage: ' . $e->getMessage());
+        }
     }
-
-    $paymentRow = [
-        'id' => $paymentId,
-        'student_name' => $name,
-        'student_email' => $email,
-        'student_phone' => $phone,
-        'amount' => $amount,
-        'course_title' => count($items) === 1 ? ($items[0]['title'] ?? '') : cartTitlesSummary(),
-    ];
-    notifyPaymentReceived($paymentRow);
-    lineNotifyPayment($paymentRow);
 
     $courseIds = getCourseIdsFromCartItems($items);
     if ($courseIds) {
@@ -109,11 +103,34 @@ try {
         }
     }
 
-    $_SESSION['checkout_phone'] = $phone;
-    flash('payment_success', 'แจ้งชำระเงินเรียบร้อยแล้ว ทีมงานจะตรวจสอบและติดต่อกลับโดยเร็ว');
-    clearCart();
+    $pdo->commit();
 } catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    checkoutLog('payment.php: ' . $e->getMessage());
     flash('payment_error', 'เกิดข้อผิดพลาด กรุณาลองใหม่หรือติดต่อทีมงาน');
+    redirect('/public/checkout.php');
 }
+
+$paymentRow = [
+    'id' => $paymentId,
+    'student_name' => $name,
+    'student_email' => $email,
+    'student_phone' => $phone,
+    'amount' => $amount,
+    'course_title' => count($items) === 1 ? ($items[0]['title'] ?? '') : cartTitlesSummary(),
+];
+
+try {
+    notifyPaymentReceived($paymentRow);
+    lineNotifyPayment($paymentRow);
+} catch (Throwable $e) {
+    checkoutLog('payment notify: ' . $e->getMessage());
+}
+
+$_SESSION['checkout_phone'] = $phone;
+flash('payment_success', 'แจ้งชำระเงินเรียบร้อยแล้ว ทีมงานจะตรวจสอบและติดต่อกลับโดยเร็ว');
+clearCart();
 
 redirect('/public/checkout.php');

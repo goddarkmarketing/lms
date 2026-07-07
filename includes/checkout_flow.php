@@ -67,6 +67,57 @@ function requireCartForCheckout(): void
     redirect('/public/courses.php');
 }
 
+function checkoutLog(string $message): void
+{
+    $logDir = dirname(__DIR__) . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    file_put_contents($logDir . '/payment.log', date('Y-m-d H:i:s') . ' ' . $message . "\n", FILE_APPEND);
+}
+
+function insertBankTransferPayment(
+    ?int $courseId,
+    string $name,
+    ?string $email,
+    string $phone,
+    float $amount,
+    ?string $transferDate,
+    ?string $transferTime,
+    ?string $slipPath,
+    ?string $note,
+    ?string $couponCode
+): int {
+    $baseParams = [
+        $courseId ?: null,
+        $name,
+        $email ?: null,
+        $phone,
+        $amount,
+        $transferDate ?: null,
+        $transferTime ?: null,
+        $slipPath,
+        $note ?: null,
+    ];
+
+    try {
+        $stmt = db()->prepare('
+            INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, coupon_code, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
+        ');
+        $stmt->execute([...$baseParams, $couponCode]);
+    } catch (Throwable $e) {
+        checkoutLog('insert payment without coupon_code: ' . $e->getMessage());
+        $stmt = db()->prepare('
+            INSERT INTO payments (course_id, student_name, student_email, student_phone, amount, transfer_date, transfer_time, slip_image, note, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")
+        ');
+        $stmt->execute($baseParams);
+    }
+
+    return (int) db()->lastInsertId();
+}
+
 function appendCartIdsToNote(string $note): string
 {
     $ids = getCartCourseIds();
@@ -93,22 +144,27 @@ function savePaymentItems(int $paymentId, array $cartItems): void
     if ($paymentId <= 0 || !$cartItems) {
         return;
     }
-    require_once __DIR__ . '/booking.php';
-    $sessionMap = getCartSessionMap();
 
-    $stmt = db()->prepare('INSERT INTO payment_items (payment_id, course_id, session_id, amount) VALUES (?, ?, ?, ?)');
-    foreach ($cartItems as $item) {
-        $courseId = (int) ($item['id'] ?? 0);
-        if ($courseId <= 0) {
-            continue;
+    try {
+        require_once __DIR__ . '/booking.php';
+        $sessionMap = getCartSessionMap();
+
+        $stmt = db()->prepare('INSERT INTO payment_items (payment_id, course_id, session_id, amount) VALUES (?, ?, ?, ?)');
+        foreach ($cartItems as $item) {
+            $courseId = (int) ($item['id'] ?? 0);
+            if ($courseId <= 0) {
+                continue;
+            }
+            $sessionId = $sessionMap[$courseId] ?? null;
+            try {
+                $stmt->execute([$paymentId, $courseId, $sessionId ?: null, (float) ($item['price'] ?? 0)]);
+            } catch (Throwable $e) {
+                $fallback = db()->prepare('INSERT INTO payment_items (payment_id, course_id, amount) VALUES (?, ?, ?)');
+                $fallback->execute([$paymentId, $courseId, (float) ($item['price'] ?? 0)]);
+            }
         }
-        $sessionId = $sessionMap[$courseId] ?? null;
-        try {
-            $stmt->execute([$paymentId, $courseId, $sessionId ?: null, (float) ($item['price'] ?? 0)]);
-        } catch (Throwable $e) {
-            $fallback = db()->prepare('INSERT INTO payment_items (payment_id, course_id, amount) VALUES (?, ?, ?)');
-            $fallback->execute([$paymentId, $courseId, (float) ($item['price'] ?? 0)]);
-        }
+    } catch (Throwable $e) {
+        checkoutLog('savePaymentItems: ' . $e->getMessage());
     }
 }
 
