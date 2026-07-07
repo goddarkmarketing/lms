@@ -100,9 +100,15 @@ if ($filterCourse) {
     $params[] = $filterCourse;
 }
 $sql .= ' ORDER BY cs.starts_at DESC LIMIT 100';
-$stmt = db()->prepare($sql);
-$stmt->execute($params);
-$sessions = $stmt->fetchAll();
+$sessions = [];
+try {
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    $sessions = $stmt->fetchAll();
+} catch (Throwable $e) {
+    // If production hasn't migrated yet, keep UI usable (empty state).
+    $sessions = [];
+}
 ?>
 
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>

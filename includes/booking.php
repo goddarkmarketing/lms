@@ -117,46 +117,59 @@ function getSessionById(int $sessionId): ?array
     if ($sessionId <= 0) {
         return null;
     }
-    $stmt = db()->prepare('
-        SELECT cs.*, c.title AS course_title, c.slug AS course_slug, c.zoom_url AS course_zoom_url, c.course_type
-        FROM course_sessions cs
-        JOIN courses c ON c.id = cs.course_id
-        WHERE cs.id = ?
-        LIMIT 1
-    ');
-    $stmt->execute([$sessionId]);
-    $row = $stmt->fetch();
-    return $row ?: null;
+    try {
+        $stmt = db()->prepare('
+            SELECT cs.*, c.title AS course_title, c.slug AS course_slug, c.zoom_url AS course_zoom_url, c.course_type
+            FROM course_sessions cs
+            JOIN courses c ON c.id = cs.course_id
+            WHERE cs.id = ?
+            LIMIT 1
+        ');
+        $stmt->execute([$sessionId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        // Production may not have migrated yet; avoid blank page.
+        return null;
+    }
 }
 
 function getAvailableSessions(int $courseId, int $limit = 30): array
 {
-    $stmt = db()->prepare('
-        SELECT cs.*, c.title AS course_title, c.zoom_url AS course_zoom_url
-        FROM course_sessions cs
-        JOIN courses c ON c.id = cs.course_id
-        WHERE cs.course_id = ?
-          AND cs.status = "scheduled"
-          AND cs.starts_at > NOW()
-          AND cs.booked_count < cs.capacity
-        ORDER BY cs.starts_at ASC
-        LIMIT ?
-    ');
-    $stmt->bindValue(1, $courseId, PDO::PARAM_INT);
-    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
-    $stmt->execute();
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare('
+            SELECT cs.*, c.title AS course_title, c.zoom_url AS course_zoom_url
+            FROM course_sessions cs
+            JOIN courses c ON c.id = cs.course_id
+            WHERE cs.course_id = ?
+              AND cs.status = "scheduled"
+              AND cs.starts_at > NOW()
+              AND cs.booked_count < cs.capacity
+            ORDER BY cs.starts_at ASC
+            LIMIT ?
+        ');
+        $stmt->bindValue(1, $courseId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
 }
 
 function sessionHasCapacity(int $sessionId): bool
 {
-    $stmt = db()->prepare('
-        SELECT id FROM course_sessions
-        WHERE id = ? AND status = "scheduled" AND starts_at > NOW() AND booked_count < capacity
-        LIMIT 1
-    ');
-    $stmt->execute([$sessionId]);
-    return (bool) $stmt->fetchColumn();
+    try {
+        $stmt = db()->prepare('
+            SELECT id FROM course_sessions
+            WHERE id = ? AND status = "scheduled" AND starts_at > NOW() AND booked_count < capacity
+            LIMIT 1
+        ');
+        $stmt->execute([$sessionId]);
+        return (bool) $stmt->fetchColumn();
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 function getCartSessionMap(): array
@@ -361,17 +374,21 @@ function confirmBookingsForPayment(int $paymentId, int $studentId): void
 
 function getStudentBookings(int $studentId): array
 {
-    $stmt = db()->prepare('
-        SELECT sb.*, cs.starts_at, cs.ends_at, cs.title AS session_title, cs.zoom_url AS session_zoom_url,
-               c.id AS course_id, c.title AS course_title, c.slug AS course_slug, c.zoom_url AS course_zoom_url, c.course_type
-        FROM session_bookings sb
-        JOIN course_sessions cs ON cs.id = sb.session_id
-        JOIN courses c ON c.id = cs.course_id
-        WHERE sb.student_id = ? AND sb.status IN ("pending","confirmed")
-        ORDER BY cs.starts_at ASC
-    ');
-    $stmt->execute([$studentId]);
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare('
+            SELECT sb.*, cs.starts_at, cs.ends_at, cs.title AS session_title, cs.zoom_url AS session_zoom_url,
+                   c.id AS course_id, c.title AS course_title, c.slug AS course_slug, c.zoom_url AS course_zoom_url, c.course_type
+            FROM session_bookings sb
+            JOIN course_sessions cs ON cs.id = sb.session_id
+            JOIN courses c ON c.id = cs.course_id
+            WHERE sb.student_id = ? AND sb.status IN ("pending","confirmed")
+            ORDER BY cs.starts_at ASC
+        ');
+        $stmt->execute([$studentId]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
 }
 
 function getAdminBookings(?string $status = null, int $limit = 200): array
@@ -390,9 +407,13 @@ function getAdminBookings(?string $status = null, int $limit = 200): array
         $params[] = $status;
     }
     $sql .= ' ORDER BY cs.starts_at DESC LIMIT ' . (int) $limit;
-    $stmt = db()->prepare($sql);
-    $stmt->execute($params);
-    return $stmt->fetchAll();
+    try {
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
 }
 
 function getUpcomingSessions(int $limit = 20): array

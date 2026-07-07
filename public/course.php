@@ -190,11 +190,18 @@ require_once dirname(__DIR__) . '/includes/header.php';
                 <?php endif; ?>
             </section>
 
-            <?php if ($courseGames): ?>
-            <section class="course-block">
-                <h2 class="course-block-title">เกมฝึกฝนในคอร์ส</h2>
-                <?php $games = $courseGames; $variant = 'course'; require dirname(__DIR__) . '/includes/views/course_games_block.php'; ?>
-            </section>
+            <?php if ($student && studentHasCourseAccess((int) $student['id'], (int) $course['id'])): ?>
+                <?php if ($courseGames): ?>
+                <section class="course-block">
+                    <h2 class="course-block-title">เกมฝึกฝนในคอร์ส</h2>
+                    <?php $games = $courseGames; $variant = 'course'; require dirname(__DIR__) . '/includes/views/course_games_block.php'; ?>
+                </section>
+                <?php else: ?>
+                <section class="course-block">
+                    <h2 class="course-block-title">เกมฝึกฝนในคอร์ส</h2>
+                    <div class="lesson-empty">ยังไม่มีเกมฝึกฝนในคอร์สนี้ในขณะนี้</div>
+                </section>
+                <?php endif; ?>
             <?php endif; ?>
 
             <section class="course-block course-payment-info">
