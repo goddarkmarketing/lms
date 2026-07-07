@@ -653,6 +653,60 @@ function getCourseRevenueReport(int $limit = 20): array
     }
 }
 
+function sessionStatusLabel(string $status): string
+{
+    return match ($status) {
+        'scheduled' => 'เปิดจอง',
+        'cancelled' => 'ยกเลิก',
+        'completed' => 'จบแล้ว',
+        default => $status,
+    };
+}
+
+function sessionStatusBadgeClass(string $status): string
+{
+    return match ($status) {
+        'scheduled' => 'badge-active',
+        'cancelled' => 'badge-cancelled',
+        default => 'badge-completed',
+    };
+}
+
+/** เหตุผลที่นักเรียนยังมองไม่เห็นรอบนี้ — null = แสดงได้ */
+function getSessionStudentVisibilityReason(array $session, ?array $course = null): ?string
+{
+    $courseId = (int) ($session['course_id'] ?? $course['id'] ?? 0);
+    if (!$course && $courseId > 0) {
+        $course = getCourseById($courseId);
+    }
+    if (!$course) {
+        return 'ไม่พบคอร์ส';
+    }
+    if (!isCourseActive($course)) {
+        return 'คอร์สปิดใช้งาน';
+    }
+    if (!isLiveCourse($course)) {
+        return 'คอร์สไม่ใช่ประเภท Live/Hybrid';
+    }
+    if (($session['status'] ?? '') !== 'scheduled') {
+        return 'สถานะรอบไม่เปิดจอง';
+    }
+    $starts = strtotime((string) ($session['starts_at'] ?? ''));
+    if (!$starts || $starts <= time()) {
+        return 'เลยเวลาเริ่มแล้ว';
+    }
+    if ((int) ($session['booked_count'] ?? 0) >= (int) ($session['capacity'] ?? 0)) {
+        return 'ที่นั่งเต็ม';
+    }
+
+    return null;
+}
+
+function isSessionVisibleToStudents(array $session, ?array $course = null): bool
+{
+    return getSessionStudentVisibilityReason($session, $course) === null;
+}
+
 function bookingStatusLabel(string $status): string
 {
     return match ($status) {

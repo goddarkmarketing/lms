@@ -58,20 +58,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
+        $courseRow = getCourseById($courseId);
+        $sessionPreview = [
+            'course_id' => $courseId,
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'status' => $status,
+            'booked_count' => 0,
+            'capacity' => $capacity,
+        ];
+        $visibilityNote = function (string $base) use ($sessionPreview, $courseRow): string {
+            $reason = getSessionStudentVisibilityReason($sessionPreview, $courseRow);
+            if ($reason) {
+                return $base . ' — นักเรียนยังไม่เห็น: ' . $reason;
+            }
+
+            return $base . ' — แสดงหน้าเว็บให้นักเรียนจองได้แล้ว';
+        };
+
         if ($postAction === 'create' && $courseId && $startsAt && $endsAt) {
             $stmt = db()->prepare('
                 INSERT INTO course_sessions (course_id, title, starts_at, ends_at, capacity, zoom_url, image_url, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ');
             $stmt->execute([$courseId, $title, $startsAt, $endsAt, $capacity, $zoomUrl ?: null, $imageUrl ?: null, $status]);
-            flash('admin_success', 'เพิ่มรอบเรียนเรียบร้อย');
+            flash('admin_success', $visibilityNote('เพิ่มรอบเรียนเรียบร้อย'));
         } elseif ($postAction === 'update' && $editId) {
+            $existing = getSessionById($editId);
+            if ($existing) {
+                $sessionPreview['booked_count'] = (int) ($existing['booked_count'] ?? 0);
+            }
             $stmt = db()->prepare('
                 UPDATE course_sessions SET course_id=?, title=?, starts_at=?, ends_at=?, capacity=?, zoom_url=?, image_url=?, status=?
                 WHERE id=?
             ');
             $stmt->execute([$courseId, $title, $startsAt, $endsAt, $capacity, $zoomUrl ?: null, $imageUrl ?: null, $status, $editId]);
-            flash('admin_success', 'อัปเดตรอบเรียนเรียบร้อย');
+            flash('admin_success', $visibilityNote('อัปเดตรอบเรียนเรียบร้อย'));
         } elseif ($postAction === 'delete' && $editId) {
             db()->prepare('DELETE FROM course_sessions WHERE id = ?')->execute([$editId]);
             flash('admin_success', 'ลบรอบเรียนเรียบร้อย');
@@ -95,11 +117,13 @@ $action = $_GET['action'] ?? 'list';
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 $editSession = $id ? getSessionById($id) : null;
-$courses = getCourses(null, true);
+$courses = getCourses(null, false);
 $liveCourses = array_values(array_filter($courses, static fn($c) => isLiveCourse($c)));
+$defaultStartsAt = date('Y-m-d\TH:i', strtotime('tomorrow 10:00'));
+$defaultEndsAt = date('Y-m-d\TH:i', strtotime('tomorrow 11:30'));
 
 $sql = '
-    SELECT cs.*, c.title AS course_title
+    SELECT cs.*, c.title AS course_title, c.slug AS course_slug, c.course_type, c.is_active
     FROM course_sessions cs
     JOIN courses c ON c.id = cs.course_id
 ';
@@ -161,11 +185,11 @@ try {
             <div class="form-row">
                 <div class="form-group">
                     <label>เริ่ม *</label>
-                    <input type="datetime-local" name="starts_at" class="form-control" required value="<?= e(isset($editSession['starts_at']) ? date('Y-m-d\TH:i', strtotime($editSession['starts_at'])) : '') ?>">
+                    <input type="datetime-local" name="starts_at" class="form-control" required value="<?= e(isset($editSession['starts_at']) ? date('Y-m-d\TH:i', strtotime($editSession['starts_at'])) : $defaultStartsAt) ?>">
                 </div>
                 <div class="form-group">
                     <label>สิ้นสุด *</label>
-                    <input type="datetime-local" name="ends_at" class="form-control" required value="<?= e(isset($editSession['ends_at']) ? date('Y-m-d\TH:i', strtotime($editSession['ends_at'])) : '') ?>">
+                    <input type="datetime-local" name="ends_at" class="form-control" required value="<?= e(isset($editSession['ends_at']) ? date('Y-m-d\TH:i', strtotime($editSession['ends_at'])) : $defaultEndsAt) ?>">
                 </div>
             </div>
             <div class="form-row">
@@ -232,16 +256,28 @@ try {
                     <th>ที่นั่ง</th>
                     <th>Zoom</th>
                     <th>สถานะ</th>
+                    <th>หน้าเว็บ</th>
                     <th class="actions">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (!$sessions): ?>
-                <tr><td colspan="7" class="table-empty">ยังไม่มีรอบเรียน</td></tr>
+                <tr><td colspan="8" class="table-empty">ยังไม่มีรอบเรียน</td></tr>
                 <?php endif; ?>
                 <?php foreach ($sessions as $s): ?>
-                <tr>
-                    <td><?= e($s['course_title']) ?></td>
+                <?php
+                    $sessionCourse = [
+                        'id' => (int) ($s['course_id'] ?? 0),
+                        'course_type' => $s['course_type'] ?? 'recorded',
+                        'is_active' => $s['is_active'] ?? 1,
+                    ];
+                    $visibilityReason = getSessionStudentVisibilityReason($s, $sessionCourse);
+                ?>
+                <tr<?= $visibilityReason ? ' class="admin-table-row--muted"' : '' ?>>
+                    <td>
+                        <?= e($s['course_title']) ?><br>
+                        <small><?= e(courseTypeLabel($sessionCourse['course_type'] ?? 'recorded')) ?></small>
+                    </td>
                     <td>
                         <?php if (sessionImageUrl($s)): ?>
                         <img src="<?= e(sessionImageUrl($s)) ?>" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px">
@@ -253,7 +289,15 @@ try {
                     </td>
                     <td><?= (int) $s['booked_count'] ?> / <?= (int) $s['capacity'] ?></td>
                     <td><?= ($s['zoom_url'] ?? '') ? 'มี' : '—' ?></td>
-                    <td><span class="badge badge-<?= ($s['status'] ?? '') === 'scheduled' ? 'active' : (($s['status'] ?? '') === 'cancelled' ? 'cancelled' : 'completed') ?>"><?= e($s['status']) ?></span></td>
+                    <td><span class="badge <?= e(sessionStatusBadgeClass($s['status'] ?? '')) ?>"><?= e(sessionStatusLabel($s['status'] ?? '')) ?></span></td>
+                    <td>
+                        <?php if ($visibilityReason): ?>
+                        <span class="badge badge-pending" title="<?= e($visibilityReason) ?>">ซ่อน</span>
+                        <small class="admin-table-hint"><?= e($visibilityReason) ?></small>
+                        <?php else: ?>
+                        <span class="badge badge-active">แสดง</span>
+                        <?php endif; ?>
+                    </td>
                     <td class="actions">
                         <div class="table-actions">
                             <a href="?action=edit&id=<?= (int) $s['id'] ?>" class="btn btn-secondary btn-sm">แก้ไข</a>

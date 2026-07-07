@@ -37,6 +37,23 @@ test_check('sessionSeatsStatus low', sessionSeatsStatus(2, 20) === 'low');
 test_check('bookingStatusLabel', bookingStatusLabel('confirmed') === 'ยืนยันแล้ว');
 test_check('bookingStatusBadgeClass', bookingStatusBadgeClass('pending') === 'badge-pending');
 
+$vodCourse = ['course_type' => 'recorded', 'is_active' => 1];
+$liveCourseRow = ['course_type' => 'live', 'is_active' => 1];
+$futureSession = [
+    'course_id' => 1,
+    'status' => 'scheduled',
+    'starts_at' => date('Y-m-d H:i:s', strtotime('+2 days 10:00')),
+    'ends_at' => date('Y-m-d H:i:s', strtotime('+2 days 11:30')),
+    'booked_count' => 0,
+    'capacity' => 20,
+];
+test_check('visibility: live future', getSessionStudentVisibilityReason($futureSession, $liveCourseRow) === null);
+test_check('visibility: recorded course', getSessionStudentVisibilityReason($futureSession, $vodCourse) === 'คอร์สไม่ใช่ประเภท Live/Hybrid');
+$pastSession = $futureSession;
+$pastSession['starts_at'] = date('Y-m-d H:i:s', strtotime('-1 hour'));
+test_check('visibility: past session', getSessionStudentVisibilityReason($pastSession, $liveCourseRow) === 'เลยเวลาเริ่มแล้ว');
+test_check('sessionStatusLabel', sessionStatusLabel('scheduled') === 'เปิดจอง');
+
 $liveCourse = ['slug' => 'live-hsk-demo-test', 'zoom_url' => 'https://zoom.us/j/course'];
 $confirmedBooking = ['status' => 'confirmed', 'zoom_url' => 'https://zoom.us/j/session'];
 test_check('courseLiveStartUrl zoom', courseLiveStartUrl($liveCourse, $confirmedBooking) === 'https://zoom.us/j/session');
