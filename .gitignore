@@ -11,6 +11,7 @@ uploads/sessions/*
 !uploads/sessions/.gitkeep
 assets/videos/*
 !assets/videos/.gitkeep
+!assets/videos/lms-overview-web.mp4
 storage/cache/*
 !storage/cache/.gitkeep
 node_modules/
