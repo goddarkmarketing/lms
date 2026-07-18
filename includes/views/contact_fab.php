@@ -118,20 +118,23 @@ if (is_file($contactFabMascotPath)) {
             </button>
             <p class="contact-fab-bubble-text"><strong>น้องหน่อไม้</strong>สวัสดีครับ มีอะไรให้ช่วยเหลือไหมครับ?</p>
         </div>
-        <img
-            src="<?= e($contactFabMascotUrl) ?>"
-            class="contact-fab-mascot"
+        <button
+            type="button"
+            class="contact-fab-hit"
             id="contactFabTrigger"
-            role="button"
-            tabindex="0"
             aria-expanded="false"
             aria-controls="contactFabPanel"
             aria-label="ติดต่อเรา"
+        ></button>
+        <img
+            src="<?= e($contactFabMascotUrl) ?>"
+            class="contact-fab-mascot"
             alt=""
             width="128"
             height="128"
             loading="lazy"
             decoding="async"
+            aria-hidden="true"
         >
     </div>
 </div>

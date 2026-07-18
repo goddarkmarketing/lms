@@ -514,12 +514,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setContactFabOpen(!isOpen);
     };
     contactFabTrigger.addEventListener('click', toggleContactFab);
-    contactFabTrigger.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggleContactFab();
-      }
-    });
     contactFabClose?.addEventListener('click', () => setContactFabOpen(false));
     contactFabBubbleClose?.addEventListener('click', (e) => {
       e.stopPropagation();

@@ -9,6 +9,8 @@ uploads/announcements/*
 !uploads/announcements/.gitkeep
 uploads/sessions/*
 !uploads/sessions/.gitkeep
+assets/videos/*
+!assets/videos/.gitkeep
 storage/cache/*
 !storage/cache/.gitkeep
 node_modules/

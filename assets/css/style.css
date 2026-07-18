@@ -7646,23 +7646,26 @@ body.has-course-mobile-bar {
   right: 1.25rem;
   bottom: 1.25rem;
   z-index: 90;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: .75rem;
+  width: 128px;
+  height: 128px;
+  pointer-events: none;
 }
 
 .contact-fab-anchor {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 128px;
+  height: 128px;
+  pointer-events: none;
 }
 
 .contact-fab-bubble {
-  position: relative;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + .55rem);
   width: min(260px, calc(100vw - 3rem));
-  margin-bottom: .65rem;
+  margin: 0;
   padding: .8rem 2rem .8rem .95rem;
   background: var(--white);
   border: 2px solid #06c755;
@@ -7693,7 +7696,7 @@ body.has-course-mobile-bar {
   opacity: 1;
   visibility: visible;
   transform: translateY(0) scale(1);
-  pointer-events: auto;
+  pointer-events: none;
   animation: contact-fab-bubble-pop .5s cubic-bezier(.34, 1.45, .64, 1);
 }
 
@@ -7720,6 +7723,7 @@ body.has-course-mobile-bar {
   background: var(--gray-100);
   color: var(--gray-600);
   cursor: pointer;
+  pointer-events: auto;
   transition: background .15s;
 }
 
@@ -7746,31 +7750,43 @@ body.has-course-mobile-bar {
 }
 
 .contact-fab-mascot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
   width: 128px;
   height: 128px;
   object-fit: contain;
   display: block;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  line-height: 0;
-  -webkit-tap-highlight-color: transparent;
+  pointer-events: none;
   user-select: none;
   transform-origin: center bottom;
   animation: contact-fab-idle 3.2s ease-in-out infinite;
   transition: transform .2s ease;
 }
 
-.contact-fab-mascot:hover {
-  transform: translateY(-4px) scale(1.03);
+.contact-fab-hit {
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
+  z-index: 2;
+  width: 88px;
+  height: 100px;
+  padding: 0;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.contact-fab-mascot:focus-visible {
+.contact-fab-hit:focus-visible {
   outline: 2px solid #06c755;
-  outline-offset: 4px;
-  border-radius: 12px;
+  outline-offset: 3px;
+}
+
+.contact-fab-anchor:has(.contact-fab-hit:hover) .contact-fab-mascot {
+  transform: translateY(-4px) scale(1.03);
 }
 
 .contact-fab.is-open .contact-fab-mascot {
@@ -7794,7 +7810,7 @@ body.has-course-mobile-bar {
     animation: none !important;
   }
 
-  .contact-fab-mascot:hover {
+  .contact-fab-anchor:has(.contact-fab-hit:hover) .contact-fab-mascot {
     transform: none;
   }
 
@@ -7804,13 +7820,28 @@ body.has-course-mobile-bar {
 }
 
 @media (max-width: 600px) {
+  .contact-fab,
+  .contact-fab-anchor {
+    width: 104px;
+    height: 104px;
+  }
+
   .contact-fab-mascot {
     width: 104px;
     height: 104px;
   }
+
+  .contact-fab-hit {
+    right: 6px;
+    width: 72px;
+    height: 84px;
+  }
 }
 
 .contact-fab-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + .75rem);
   width: min(300px, calc(100vw - 2.5rem));
   background: var(--white);
   border: 1px solid var(--gray-200);
