@@ -32,6 +32,7 @@ try {
           id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
           quiz_id INT UNSIGNED NOT NULL,
           question_text TEXT NOT NULL,
+          audio_url VARCHAR(500) DEFAULT NULL,
           options_json TEXT NOT NULL,
           correct_key VARCHAR(10) NOT NULL,
           sort_order INT DEFAULT 0,

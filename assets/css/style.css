@@ -3478,6 +3478,23 @@ a:hover { color: var(--red-dark); }
   margin-bottom: .75rem;
   padding: 0;
 }
+.quiz-question-audio {
+  margin: 0 0 1rem;
+  padding: .85rem 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+}
+.quiz-question-audio-label {
+  margin: 0 0 .55rem;
+  font-size: .88rem;
+  color: var(--gray-600);
+}
+.quiz-question-audio audio {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+}
 .quiz-option {
   display: flex;
   align-items: flex-start;

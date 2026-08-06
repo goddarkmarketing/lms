@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/quiz.php';
+require_once dirname(__DIR__) . '/includes/media_upload.php';
 requireAdmin();
 
 $filterCourse = (int) ($_GET['course_id'] ?? 0);
@@ -42,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $text = trim($_POST['question_text'] ?? '');
         $correct = trim($_POST['correct_key'] ?? 'A');
         $sortOrder = (int) ($_POST['sort_order'] ?? 0);
+        $removeAudio = isset($_POST['remove_audio']);
         $options = [];
         foreach (['A', 'B', 'C', 'D'] as $key) {
             $val = trim($_POST['option_' . $key] ?? '');
@@ -49,14 +51,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $options[$key] = $val;
             }
         }
+
+        $existing = $qid > 0 ? getQuizQuestionById($qid) : null;
+        $audioUrl = $existing['audio_url'] ?? null;
+
+        $uploaded = storeQuizAudioUpload($_FILES['audio_file'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
+        if ($uploaded === false) {
+            redirect('/admin/quizzes.php?action=questions&quiz_id=' . $quizIdPost . ($qid ? '&qid=' . $qid : ''));
+        }
+        if ($uploaded !== null) {
+            if ($audioUrl) {
+                deleteQuizAudioFile($audioUrl);
+            }
+            $audioUrl = $uploaded;
+        } elseif ($removeAudio && $audioUrl) {
+            deleteQuizAudioFile($audioUrl);
+            $audioUrl = null;
+        }
+
         if ($quizIdPost && $text && $options) {
             $json = json_encode($options, JSON_UNESCAPED_UNICODE);
             if ($qid) {
-                $stmt = db()->prepare('UPDATE quiz_questions SET question_text=?, options_json=?, correct_key=?, sort_order=? WHERE id=?');
-                $stmt->execute([$text, $json, $correct, $sortOrder, $qid]);
+                $stmt = db()->prepare('UPDATE quiz_questions SET question_text=?, audio_url=?, options_json=?, correct_key=?, sort_order=? WHERE id=?');
+                $stmt->execute([$text, $audioUrl, $json, $correct, $sortOrder, $qid]);
             } else {
-                $stmt = db()->prepare('INSERT INTO quiz_questions (quiz_id, question_text, options_json, correct_key, sort_order) VALUES (?,?,?,?,?)');
-                $stmt->execute([$quizIdPost, $text, $json, $correct, $sortOrder]);
+                $stmt = db()->prepare('INSERT INTO quiz_questions (quiz_id, question_text, audio_url, options_json, correct_key, sort_order) VALUES (?,?,?,?,?,?)');
+                $stmt->execute([$quizIdPost, $text, $audioUrl, $json, $correct, $sortOrder]);
             }
             flash('admin_success', 'บันทึกคำถามเรียบร้อย');
         }
@@ -67,6 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $qid = (int) ($_POST['question_id'] ?? 0);
         $quizIdPost = (int) ($_POST['quiz_id'] ?? 0);
         if ($qid) {
+            $existing = getQuizQuestionById($qid);
+            if ($existing) {
+                deleteQuizAudioFile($existing['audio_url'] ?? null);
+            }
             db()->prepare('DELETE FROM quiz_questions WHERE id = ?')->execute([$qid]);
             flash('admin_success', 'ลบคำถามแล้ว');
         }
@@ -76,6 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($postAction === 'delete_quiz') {
         $id = (int) ($_POST['id'] ?? 0);
         if ($id) {
+            foreach (getQuizQuestions($id) as $q) {
+                deleteQuizAudioFile($q['audio_url'] ?? null);
+            }
             db()->prepare('DELETE FROM quizzes WHERE id = ?')->execute([$id]);
             flash('admin_success', 'ลบแบบทดสอบแล้ว');
         }
@@ -87,6 +114,7 @@ $pageTitle = 'แบบทดสอบ';
 require_once dirname(__DIR__) . '/includes/admin_header.php';
 
 $message = flash('admin_success');
+$errorMessage = flash('admin_error');
 
 $courses = getCourses(null, false);
 $quizzes = [];
@@ -117,6 +145,7 @@ if ($editQuestionId && $manageQuiz) {
 ?>
 
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
+<?php if ($errorMessage): ?><div class="alert alert-error"><?= e($errorMessage) ?></div><?php endif; ?>
 
 <?php if ($action === 'add' || $editQuiz): ?>
 <div class="admin-card">
@@ -176,7 +205,7 @@ if ($editQuestionId && $manageQuiz) {
         <a href="<?= APP_URL ?>/admin/quizzes.php" class="btn btn-secondary btn-sm">กลับ</a>
     </div>
     <div class="admin-card-body">
-        <form method="post" class="admin-subform-panel">
+        <form method="post" class="admin-subform-panel" enctype="multipart/form-data">
             <?= csrfField() ?>
             <input type="hidden" name="action" value="save_question">
             <input type="hidden" name="quiz_id" value="<?= (int) $quizId ?>">
@@ -184,6 +213,19 @@ if ($editQuestionId && $manageQuiz) {
             <div class="form-group">
                 <label>คำถาม *</label>
                 <textarea name="question_text" class="form-control" required><?= e($editQuestion['question_text'] ?? '') ?></textarea>
+            </div>
+            <div class="form-group">
+                <label>ไฟล์เสียง (ทักษะฟัง — ไม่บังคับ)</label>
+                <input type="file" name="audio_file" class="form-control" accept=".mp3,.wav,.ogg,.m4a,.aac,audio/*">
+                <small class="form-hint">รองรับ MP3, WAV, OGG, M4A, AAC สูงสุด 15MB</small>
+                <?php if ($editQuestion && quizQuestionHasAudio($editQuestion)): ?>
+                <div class="quiz-admin-audio-preview" style="margin-top:.75rem">
+                    <audio controls preload="metadata" src="<?= e(quizQuestionAudioUrl($editQuestion) ?? '') ?>" style="width:100%;max-width:420px"></audio>
+                    <label style="display:block;margin-top:.5rem">
+                        <input type="checkbox" name="remove_audio" value="1"> ลบไฟล์เสียงออกจากคำถามนี้
+                    </label>
+                </div>
+                <?php endif; ?>
             </div>
             <?php $opts = $editQuestion ? parseQuestionOptions($editQuestion) : []; ?>
             <?php foreach (['A', 'B', 'C', 'D'] as $key): ?>
@@ -216,12 +258,13 @@ if ($editQuestionId && $manageQuiz) {
 
         <div class="table-responsive">
         <table class="data-table">
-            <thead><tr><th>#</th><th>คำถาม</th><th>คำตอบ</th><th class="actions">จัดการ</th></tr></thead>
+            <thead><tr><th>#</th><th>คำถาม</th><th>เสียง</th><th>คำตอบ</th><th class="actions">จัดการ</th></tr></thead>
             <tbody>
                 <?php foreach ($questions as $i => $q): ?>
                 <tr>
                     <td><?= $i + 1 ?></td>
                     <td><?= e($q['question_text']) ?></td>
+                    <td><?= quizQuestionHasAudio($q) ? 'มี' : '-' ?></td>
                     <td><?= e($q['correct_key']) ?></td>
                     <td class="actions">
                         <div class="table-actions">

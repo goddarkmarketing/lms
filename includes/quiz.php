@@ -34,6 +34,27 @@ function getQuizQuestions(int $quizId): array
     return $stmt->fetchAll();
 }
 
+function getQuizQuestionById(int $questionId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM quiz_questions WHERE id = ? LIMIT 1');
+    $stmt->execute([$questionId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function quizQuestionHasAudio(array $question): bool
+{
+    return trim((string) ($question['audio_url'] ?? '')) !== '';
+}
+
+function quizQuestionAudioUrl(array $question): ?string
+{
+    if (!quizQuestionHasAudio($question)) {
+        return null;
+    }
+    return APP_URL . '/public/quiz_audio.php?qid=' . (int) ($question['id'] ?? 0);
+}
+
 function studentCanTakeQuiz(int $studentId, array $quiz): bool
 {
     return studentHasCourseAccess($studentId, (int) ($quiz['course_id'] ?? 0));

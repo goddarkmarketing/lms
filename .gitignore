@@ -9,6 +9,8 @@ uploads/announcements/*
 !uploads/announcements/.gitkeep
 uploads/sessions/*
 !uploads/sessions/.gitkeep
+uploads/quizzes/*
+!uploads/quizzes/.gitkeep
 assets/videos/*
 !assets/videos/.gitkeep
 !assets/videos/lms-overview-web.mp4

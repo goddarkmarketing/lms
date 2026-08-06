@@ -20,7 +20,7 @@ $checkoutNavUrl = $cartCount > 0
     <title><?= e($pageTitle) ?> | <?= e(getSetting('site_title')) ?></title>
     <meta name="description" content="<?= e(getSetting('site_tagline')) ?>">
     <?php require __DIR__ . '/views/fonts_head.php'; ?>
-    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=126">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>?v=127">
     <link rel="icon" href="<?= e(brandLogoAsset()) ?>" type="image/svg+xml">
 </head>
 <body>

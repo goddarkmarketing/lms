@@ -58,8 +58,17 @@ require_once dirname(__DIR__) . '/includes/header.php';
             <input type="hidden" name="quiz_id" value="<?= $quizId ?>">
             <?php foreach ($questions as $i => $q): ?>
             <?php $opts = parseQuestionOptions($q); ?>
+            <?php $audioUrl = quizQuestionAudioUrl($q); ?>
             <fieldset class="quiz-question-card">
                 <legend><?= ($i + 1) ?>. <?= e($q['question_text']) ?></legend>
+                <?php if ($audioUrl): ?>
+                <div class="quiz-question-audio">
+                    <p class="quiz-question-audio-label">ฟังเสียงแล้วเลือกคำตอบ</p>
+                    <audio controls preload="metadata" controlsList="nodownload" src="<?= e($audioUrl) ?>">
+                        เบราว์เซอร์ของคุณไม่รองรับการเล่นไฟล์เสียง
+                    </audio>
+                </div>
+                <?php endif; ?>
                 <?php foreach ($opts as $key => $label): ?>
                 <label class="quiz-option">
                     <input type="radio" name="answer_<?= (int) $q['id'] ?>" value="<?= e($key) ?>" required>

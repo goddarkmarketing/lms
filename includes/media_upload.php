@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 const MAX_COURSE_IMAGE_BYTES = 3 * 1024 * 1024;
 const MAX_LESSON_DOC_BYTES = 10 * 1024 * 1024;
+const MAX_QUIZ_AUDIO_BYTES = 15 * 1024 * 1024;
 
 function ensureUploadDir(string $path): void
 {
@@ -151,6 +152,50 @@ function storeLessonDocumentUpload(array $file): string|false|null
     return 'uploads/courses/' . $filename;
 }
 
+function storeQuizAudioUpload(array $file): string|false|null
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        flash('admin_error', 'อัปโหลดไฟล์เสียงไม่สำเร็จ');
+        return false;
+    }
+    if (($file['size'] ?? 0) > MAX_QUIZ_AUDIO_BYTES) {
+        flash('admin_error', 'ไฟล์เสียงใหญ่เกิน 15MB');
+        return false;
+    }
+    $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+    if (!in_array($ext, ['mp3', 'wav', 'ogg', 'm4a', 'aac'], true)) {
+        flash('admin_error', 'ไฟล์เสียงรองรับเฉพาะ MP3, WAV, OGG, M4A, AAC');
+        return false;
+    }
+    ensureUploadDir(UPLOAD_QUIZZES_PATH);
+    $filename = 'quiz_audio_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $dest = UPLOAD_QUIZZES_PATH . '/' . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        flash('admin_error', 'บันทึกไฟล์เสียงไม่สำเร็จ');
+        return false;
+    }
+    return 'uploads/quizzes/' . $filename;
+}
+
+function deleteQuizAudioFile(?string $storedPath): void
+{
+    $storedPath = trim((string) $storedPath);
+    if ($storedPath === '' || !str_starts_with($storedPath, 'uploads/quizzes/')) {
+        return;
+    }
+    $basename = basename($storedPath);
+    if ($basename === '' || $basename === '.' || $basename === '..') {
+        return;
+    }
+    $full = UPLOAD_QUIZZES_PATH . '/' . $basename;
+    if (is_file($full)) {
+        @unlink($full);
+    }
+}
+
 function mediaPublicUrl(string $storedPath): string
 {
     if (str_starts_with($storedPath, 'http://') || str_starts_with($storedPath, 'https://')) {
@@ -161,6 +206,9 @@ function mediaPublicUrl(string $storedPath): string
     }
     if (str_starts_with($storedPath, 'uploads/sessions/')) {
         return APP_URL . '/public/download.php?file=' . urlencode(basename($storedPath));
+    }
+    if (str_starts_with($storedPath, 'uploads/quizzes/')) {
+        return UPLOAD_QUIZZES_URL . '/' . rawurlencode(basename($storedPath));
     }
     return asset(ltrim($storedPath, '/'));
 }

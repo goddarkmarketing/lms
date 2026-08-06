@@ -23,6 +23,8 @@ define('UPLOAD_ANNOUNCEMENTS_PATH', BASE_PATH . '/uploads/announcements');
 define('UPLOAD_ANNOUNCEMENTS_URL', APP_URL . '/uploads/announcements');
 define('UPLOAD_SESSIONS_PATH', BASE_PATH . '/uploads/sessions');
 define('UPLOAD_SESSIONS_URL', APP_URL . '/uploads/sessions');
+define('UPLOAD_QUIZZES_PATH', BASE_PATH . '/uploads/quizzes');
+define('UPLOAD_QUIZZES_URL', APP_URL . '/uploads/quizzes');
 
 date_default_timezone_set('Asia/Bangkok');
 

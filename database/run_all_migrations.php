@@ -20,6 +20,7 @@ $files = [
     __DIR__ . '/run_migration_phase8.php',
     __DIR__ . '/run_migration_phase9.php',
     __DIR__ . '/run_migration_phase10.php',
+    __DIR__ . '/run_migration_phase11.php',
 ];
 
 foreach ($files as $file) {
